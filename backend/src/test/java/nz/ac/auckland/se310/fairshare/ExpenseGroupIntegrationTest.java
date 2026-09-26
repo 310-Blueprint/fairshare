@@ -1,14 +1,17 @@
 package nz.ac.auckland.se310.fairshare;
 
 import nz.ac.auckland.se310.fairshare.dto.CreateGroupRequest;
+import nz.ac.auckland.se310.fairshare.dto.CreateRecurringExpenseRequest;
 import nz.ac.auckland.se310.fairshare.dto.GroupMemberResponse;
 import nz.ac.auckland.se310.fairshare.dto.GroupResponse;
 import nz.ac.auckland.se310.fairshare.exception.GroupAccessDeniedException;
 import nz.ac.auckland.se310.fairshare.exception.GroupMemberConflictException;
 import nz.ac.auckland.se310.fairshare.exception.GroupMemberNotFoundException;
 import nz.ac.auckland.se310.fairshare.exception.GroupNotFoundException;
+import nz.ac.auckland.se310.fairshare.model.RecurringExpense;
 import nz.ac.auckland.se310.fairshare.repository.ExpenseGroupRepository;
 import nz.ac.auckland.se310.fairshare.service.ExpenseGroupService;
+import nz.ac.auckland.se310.fairshare.service.RecurringExpenseService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,6 +23,10 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.mysql.MySQLContainer;
 import org.testcontainers.utility.DockerImageName;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -34,6 +41,7 @@ class ExpenseGroupIntegrationTest {
     static final MySQLContainer MYSQL = new MySQLContainer(DockerImageName.parse("mysql:8.4"));
 
     @Autowired ExpenseGroupService groupService;
+    @Autowired RecurringExpenseService recurringExpenseService;
     @Autowired ExpenseGroupRepository groupRepository;
     @Autowired UserRepository userRepository;
     @Autowired JdbcTemplate jdbcTemplate;
@@ -43,6 +51,9 @@ class ExpenseGroupIntegrationTest {
 
     @BeforeEach
     void setUp() {
+        // Recurring expenses reference the group by foreign key, so they must go first.
+        jdbcTemplate.update("DELETE FROM recurring_expense_participant");
+        jdbcTemplate.update("DELETE FROM recurring_expense");
         groupRepository.deleteAll();
         aliceId = userRepository.findByEmail("alice@test.com").orElseThrow().getId();
         bobId = userRepository.findByEmail("bob@test.com").orElseThrow().getId();
@@ -188,6 +199,50 @@ class ExpenseGroupIntegrationTest {
                 .isInstanceOf(GroupMemberConflictException.class)
                 .hasMessage("The member's balance must be settled before removal");
         assertThat(groupRepository.findByIdAndMembersUserId(created.id(), bobId)).isPresent();
+    }
+
+    @Test
+    void rejectsRemovalWhilePayerOfAnActiveRecurringExpense() {
+        GroupResponse created = groupService.createGroup(
+                new CreateGroupRequest("Flat 3", null), aliceId);
+        groupService.addMember(created.id(), "bob@test.com", aliceId);
+        recurringExpenseService.createRecurringExpense(created.id(),
+                new CreateRecurringExpenseRequest(new BigDecimal("50.00"), "Gym", bobId, List.of(aliceId, bobId),
+                        RecurringExpense.Frequency.MONTHLY, LocalDate.of(2030, 1, 1), null), aliceId);
+
+        assertThatThrownBy(() -> groupService.removeMember(created.id(), bobId, aliceId))
+                .isInstanceOf(GroupMemberConflictException.class)
+                .hasMessage("The member is part of an active recurring expense and cannot be removed until it ends");
+        assertThat(groupRepository.findByIdAndMembersUserId(created.id(), bobId)).isPresent();
+    }
+
+    @Test
+    void rejectsRemovalWhileParticipantOfAnActiveRecurringExpense() {
+        GroupResponse created = groupService.createGroup(
+                new CreateGroupRequest("Flat 3", null), aliceId);
+        groupService.addMember(created.id(), "bob@test.com", aliceId);
+        recurringExpenseService.createRecurringExpense(created.id(),
+                new CreateRecurringExpenseRequest(new BigDecimal("50.00"), "Gym", aliceId, List.of(aliceId, bobId),
+                        RecurringExpense.Frequency.MONTHLY, LocalDate.of(2030, 1, 1), null), aliceId);
+
+        assertThatThrownBy(() -> groupService.removeMember(created.id(), bobId, aliceId))
+                .isInstanceOf(GroupMemberConflictException.class)
+                .hasMessage("The member is part of an active recurring expense and cannot be removed until it ends");
+    }
+
+    @Test
+    void allowsRemovalOnceTheRecurringExpenseIsNoLongerActive() {
+        GroupResponse created = groupService.createGroup(
+                new CreateGroupRequest("Flat 3", null), aliceId);
+        groupService.addMember(created.id(), "bob@test.com", aliceId);
+        recurringExpenseService.createRecurringExpense(created.id(),
+                new CreateRecurringExpenseRequest(new BigDecimal("50.00"), "Gym", bobId, List.of(aliceId, bobId),
+                        RecurringExpense.Frequency.MONTHLY, LocalDate.of(2030, 1, 1), null), aliceId);
+        jdbcTemplate.update("UPDATE recurring_expense SET active = false WHERE group_id = ?", created.id());
+
+        groupService.removeMember(created.id(), bobId, aliceId);
+
+        assertThat(groupRepository.findByIdAndMembersUserId(created.id(), bobId)).isEmpty();
     }
 
     @Test

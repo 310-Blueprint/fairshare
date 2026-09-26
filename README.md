@@ -15,16 +15,18 @@ The following works today:
 - Record an expense with an amount, description, payer, date and the members it applies to
 - Split an expense equally across the selected members, accurate to the cent
 - Browse a group's expense history and edit an existing expense
+- Set up a recurring expense, such as rent or a subscription, with a weekly, fortnightly or monthly schedule and an optional end date; it generates expenses automatically, and each generated expense is marked in the history and links back to the recurring expense that created it
 - See each member's balance, and the transactions behind a single member's balance
 - Generate a settlement plan for a group and mark individual payments as paid
 
 The following is not built yet:
 
 - Deleting an expense. Viewing and editing work, deletion has no endpoint or interface. See [issue #11](https://github.com/se310-fairshare/fairshare/issues/11).
+- Editing, pausing or deleting a recurring expense once it exists. Only creating and viewing them work.
 - Exporting group data. Data is stored in MySQL and survives a restart, but nothing produces a download. See [issue #12](https://github.com/se310-fairshare/fairshare/issues/12).
 - Splitting by percentage, shares or exact amounts. Only the equal split exists.
 
-Work planned for the next iteration is tracked in the open issues, including individual debt tracking ([#2](https://github.com/se310-fairshare/fairshare/issues/2)), receipt scanning ([#5](https://github.com/se310-fairshare/fairshare/issues/5)), recurring expenses ([#13](https://github.com/se310-fairshare/fairshare/issues/13)), multi-currency support ([#14](https://github.com/se310-fairshare/fairshare/issues/14)), payment reminders ([#15](https://github.com/se310-fairshare/fairshare/issues/15)) and spending charts ([#16](https://github.com/se310-fairshare/fairshare/issues/16)).
+Work planned for the next iteration is tracked in the open issues, including individual debt tracking ([#2](https://github.com/se310-fairshare/fairshare/issues/2)), receipt scanning ([#5](https://github.com/se310-fairshare/fairshare/issues/5)), multi-currency support ([#14](https://github.com/se310-fairshare/fairshare/issues/14)), payment reminders ([#15](https://github.com/se310-fairshare/fairshare/issues/15)) and spending charts ([#16](https://github.com/se310-fairshare/fairshare/issues/16)).
 
 ## Technology stack
 
@@ -190,6 +192,9 @@ All responses are JSON, and every route except registering and logging in needs 
 | GET | `/groups/{groupId}/expenses` | A group's expense history |
 | GET | `/groups/{groupId}/expenses/{expenseId}` | One expense |
 | PUT | `/groups/{groupId}/expenses/{expenseId}` | Edit an expense |
+| POST | `/groups/{groupId}/recurring-expenses` | Create a recurring expense |
+| GET | `/groups/{groupId}/recurring-expenses` | A group's recurring expenses |
+| GET | `/groups/{groupId}/recurring-expenses/{recurringExpenseId}` | One recurring expense |
 
 ## Contributing
 

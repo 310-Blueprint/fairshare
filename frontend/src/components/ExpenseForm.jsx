@@ -1,3 +1,5 @@
+import { AmountField, DescriptionField, PayerSelect, ParticipantsChecklist, FieldError } from './ExpenseFormFields';
+
 function ExpenseForm({
     amount,
     description,
@@ -15,57 +17,23 @@ function ExpenseForm({
     onSubmit,
     maxExpenseDate,
 }) {
-    function handleParticipantChange(event) {
-        const userId = event.target.value;
-        onParticipantUserIdsChange((currentIds) => (
-            event.target.checked
-                ? [...currentIds, userId]
-                : currentIds.filter((id) => id !== userId)
-        ));
-    }
-
     return (
         <form onSubmit={onSubmit} noValidate>
-            <div className="form-group">
-                <label htmlFor="amount">Amount</label>
-                <input
-                    id="amount"
-                    type="number"
-                    step="0.01"
-                    value={amount}
-                    placeholder="0.00"
-                    onChange={(event) => onAmountChange(event.target.value)}
-                />
-                {errors.amount && <span className="error">{errors.amount}</span>}
-            </div>
+            <AmountField value={amount} onChange={onAmountChange} error={errors.amount} />
 
-            <div className="form-group">
-                <label htmlFor="description">Description</label>
-                <input
-                    id="description"
-                    type="text"
-                    value={description}
-                    placeholder="What was it for?"
-                    onChange={(event) => onDescriptionChange(event.target.value)}
-                />
-                {errors.description && <span className="error">{errors.description}</span>}
-            </div>
+            <DescriptionField
+                value={description}
+                onChange={onDescriptionChange}
+                error={errors.description}
+                placeholder="What was it for?"
+            />
 
-            <div className="form-group">
-                <label htmlFor="paidByUserId">Paid by</label>
-                <select
-                    id="paidByUserId"
-                    value={paidByUserId}
-                    onChange={(event) => onPaidByUserIdChange(event.target.value)}
-                >
-                    {members.map((member) => (
-                        <option key={member.userId} value={member.userId}>
-                            {member.username}
-                        </option>
-                    ))}
-                </select>
-                {errors.paidByUserId && <span className="error">{errors.paidByUserId}</span>}
-            </div>
+            <PayerSelect
+                value={paidByUserId}
+                members={members}
+                onChange={onPaidByUserIdChange}
+                error={errors.paidByUserId}
+            />
 
             <div className="form-group">
                 <label htmlFor="expenseDate">Date</label>
@@ -76,30 +44,17 @@ function ExpenseForm({
                     max={maxExpenseDate}
                     onChange={(event) => onExpenseDateChange(event.target.value)}
                 />
-                {errors.expenseDate && <span className="error">{errors.expenseDate}</span>}
+                <FieldError message={errors.expenseDate} />
             </div>
 
-            <div className="select-participants">
-                <p>Participants</p>
-                <ul>
-                    {members.map((member) => (
-                        <li key={member.userId}>
-                            <label>
-                                <input
-                                    type="checkbox"
-                                    value={member.userId}
-                                    checked={participantUserIds.includes(String(member.userId))}
-                                    onChange={handleParticipantChange}
-                                />
-                                {member.username}
-                            </label>
-                        </li>
-                    ))}
-                </ul>
-                {errors.participantUserIds && <span className="error">{errors.participantUserIds}</span>}
-            </div>
+            <ParticipantsChecklist
+                participantUserIds={participantUserIds}
+                members={members}
+                onParticipantUserIdsChange={onParticipantUserIdsChange}
+                error={errors.participantUserIds}
+            />
 
-            {errors.form && <span className="error">{errors.form}</span>}
+            <FieldError message={errors.form} />
 
             <button type="submit" disabled={submitting}>
                 {submitting ? 'Saving...' : 'Save expense'}

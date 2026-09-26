@@ -2,8 +2,15 @@ import {useEffect, useState} from 'react';
 import {Link, useParams} from 'react-router-dom';
 import {getGroup, getGroupMembers} from '../api/groups';
 import {getExpenses} from '../api/expenses';
+import {getRecurringExpenses} from '../api/recurringExpenses';
 import SettlementView from './SettlementView';
 import './GroupPage.css';
+
+const FREQUENCY_LABELS = {
+    WEEKLY: 'Weekly',
+    FORTNIGHTLY: 'Fortnightly',
+    MONTHLY: 'Monthly',
+};
 
 // Formats a numeric balance into the UI's currency display and keeps the sign readable.
 function money(currency, value) {
@@ -26,8 +33,10 @@ function GroupPage() {
     const [group, setGroup] = useState(null);
     const [expenses, setExpenses] = useState([]);
     const [members, setMembers] = useState([]);
+    const [recurringExpenses, setRecurringExpenses] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [recurringExpensesError, setRecurringExpensesError] = useState(null);
     const [notFound, setNotFound] = useState(false);
 
     // Fetch the group, expenses, and members whenever the route changes so the page stays in sync.
@@ -41,9 +50,10 @@ function GroupPage() {
                 }
                 setGroup(result);
 
-                const [expenseResult, memberResult] = await Promise.all([
+                const [expenseResult, memberResult, recurringExpenseResult] = await Promise.all([
                     getExpenses(id),
                     getGroupMembers(id),
+                    getRecurringExpenses(id),
                 ]);
 
                 if (expenseResult.error || memberResult.error) {
@@ -52,6 +62,14 @@ function GroupPage() {
                 }
                 setExpenses(expenseResult.expenses);   // AC7
                 setMembers(memberResult.members);      // AC1
+
+                // A failure loading recurring expenses shouldn't hide the rest of the group page -
+                // it's shown inline in that section instead (bug report from teammate review).
+                if (recurringExpenseResult.error) {
+                    setRecurringExpensesError(recurringExpenseResult.error);
+                } else {
+                    setRecurringExpenses(recurringExpenseResult.recurringExpenses);   // #13 AC1
+                }
             } catch (err) {
                 console.error('Failed to load group', err);
                 setError('Could not load this group. Please try again.');
@@ -118,9 +136,41 @@ function GroupPage() {
                                     <span className="expense-description">{expense.description}</span>
                                     <span className="expense-meta">
                                         {expense.paidByUsername} paid on {expense.expenseDate}
+                                        {/* #13 AC3: marks a generated entry and links back to its recurring expense */}
+                                        {expense.recurringExpenseId && (
+                                            <> · <a href={`#recurring-expense-${expense.recurringExpenseId}`}>Recurring</a></>
+                                        )}
                                     </span>
                                     <span className="expense-amount">
                                         {money(group.baseCurrency, expense.amount)}
+                                    </span>
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+                </section>
+
+                <section>
+                    <h2>Recurring expenses</h2>
+                    <Link className="action" to={`/groups/${id}/recurring-expenses/new`}>Add recurring expense</Link>
+
+                    {recurringExpensesError ? (
+                        <span className="error">{recurringExpensesError}</span>
+                    ) : recurringExpenses.length === 0 ? (
+                        /* #13 AC1, AC4: every recurring expense in the group, marked active or ended */
+                        <p className="empty">No recurring expenses yet.</p>
+                    ) : (
+                        <ul className="expense-list">
+                            {recurringExpenses.map((recurringExpense) => (
+                                <li key={recurringExpense.id} id={`recurring-expense-${recurringExpense.id}`}>
+                                    <span className="expense-description">{recurringExpense.description}</span>
+                                    <span className="expense-meta">
+                                        {FREQUENCY_LABELS[recurringExpense.frequency]} · paid by {recurringExpense.paidByUsername} · starts {recurringExpense.startDate}
+                                        {recurringExpense.endDate && ` · ends ${recurringExpense.endDate}`}
+                                        {' · '}{recurringExpense.active ? 'Active' : 'Ended'}
+                                    </span>
+                                    <span className="expense-amount">
+                                        {money(group.baseCurrency, recurringExpense.amount)}
                                     </span>
                                 </li>
                             ))}

@@ -10,6 +10,7 @@ import GroupMembers from './pages/GroupMembers.jsx';
 import ViewBalance from './pages/ViewBalance.jsx';
 import MemberBalance from './pages/MemberBalance.jsx';
 import AddExpense from './pages/AddExpense.jsx';
+import AddRecurringExpense from './pages/AddRecurringExpense.jsx';
 import Login from './pages/Login.jsx';
 import UserManagement from './pages/UserManagement.jsx';
 import './index.css';
@@ -81,6 +82,11 @@ const router = createBrowserRouter([
             {
                 path: '/groups/:id/expenses/new',
                 element: <AddExpense/>,
+                loader: requireAuth
+            },
+            {
+                path: '/groups/:id/recurring-expenses/new',
+                element: <AddRecurringExpense/>,
                 loader: requireAuth
             },
             {

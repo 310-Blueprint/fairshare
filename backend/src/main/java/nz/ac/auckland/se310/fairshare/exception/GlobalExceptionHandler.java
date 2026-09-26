@@ -54,4 +54,16 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest()
                 .body(Map.of(ERROR_KEY, "Payer must be a member of the group"));
     }
+
+    @ExceptionHandler(InvalidEndDateException.class)
+    public ResponseEntity<Map<String, String>> handleInvalidEndDate(InvalidEndDateException ex) {
+        return ResponseEntity.badRequest().body(Map.of("endDate", ex.getMessage()));
+    }
+
+    @ExceptionHandler(RecurringExpenseNotFoundException.class)
+    public ResponseEntity<Map<String, String>> handleRecurringExpenseNotFound(
+            RecurringExpenseNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(Map.of(ERROR_KEY, ex.getMessage()));
+    }
 }

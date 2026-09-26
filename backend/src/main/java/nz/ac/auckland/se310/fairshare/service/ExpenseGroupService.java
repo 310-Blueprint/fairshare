@@ -12,6 +12,8 @@ import nz.ac.auckland.se310.fairshare.model.Settlement;
 import nz.ac.auckland.se310.fairshare.model.User;
 import nz.ac.auckland.se310.fairshare.model.UserInGroup;
 import nz.ac.auckland.se310.fairshare.repository.ExpenseGroupRepository;
+import nz.ac.auckland.se310.fairshare.repository.RecurringExpenseParticipantRepository;
+import nz.ac.auckland.se310.fairshare.repository.RecurringExpenseRepository;
 import nz.ac.auckland.se310.fairshare.repository.SettlementRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -38,12 +40,17 @@ public class ExpenseGroupService {
     private final UserRepository userRepository;
     private final ExpenseService expenseService;
     private final SettlementRepository settlementRepository;
+    private final RecurringExpenseRepository recurringExpenseRepository;
+    private final RecurringExpenseParticipantRepository recurringExpenseParticipantRepository;
 
-    public ExpenseGroupService(ExpenseGroupRepository groupRepository, UserRepository userRepository, ExpenseService expenseService, SettlementRepository settlementRepository) {
+    public ExpenseGroupService(ExpenseGroupRepository groupRepository, UserRepository userRepository, ExpenseService expenseService, SettlementRepository settlementRepository,
+                                RecurringExpenseRepository recurringExpenseRepository, RecurringExpenseParticipantRepository recurringExpenseParticipantRepository) {
         this.groupRepository = groupRepository;
         this.userRepository = userRepository;
         this.expenseService = expenseService;
         this.settlementRepository = settlementRepository;
+        this.recurringExpenseRepository = recurringExpenseRepository;
+        this.recurringExpenseParticipantRepository = recurringExpenseParticipantRepository;
     }
 
     @Transactional
@@ -116,6 +123,13 @@ public class ExpenseGroupService {
         if (member.hasOutstandingBalance()) {
             throw new GroupMemberConflictException(
                     "The member's balance must be settled before removal");
+        }
+        // #13 bug fix: a member who is still the payer or a participant of an active recurring
+        // expense can't leave, since generation would otherwise have no one to resolve them to.
+        if (recurringExpenseRepository.existsByGroupIdAndPaidBy_IdAndActiveTrue(groupId, memberUserId)
+                || recurringExpenseParticipantRepository.existsByRecurringExpense_GroupIdAndUser_IdAndRecurringExpense_ActiveTrue(groupId, memberUserId)) {
+            throw new GroupMemberConflictException(
+                    "The member is part of an active recurring expense and cannot be removed until it ends");
         }
 
         group.removeMember(member);

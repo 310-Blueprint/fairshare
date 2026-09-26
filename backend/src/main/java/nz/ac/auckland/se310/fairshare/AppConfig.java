@@ -1,5 +1,6 @@
 package nz.ac.auckland.se310.fairshare;
 
+import java.time.Clock;
 import java.util.List;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -17,6 +18,12 @@ public class AppConfig {
   @Bean
   public PasswordEncoder passwordEncoder() {
     return new BCryptPasswordEncoder();
+  }
+
+  // Injectable so recurring-expense due dates can be computed against a fixed instant in tests.
+  @Bean
+  public Clock clock() {
+    return Clock.systemDefaultZone();
   }
 
   @Bean

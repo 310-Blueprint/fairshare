@@ -5,6 +5,9 @@ import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import AddExpense from '../src/pages/AddExpense.jsx';
 import { getGroupMembers } from '../src/api/groups';
 import { createExpense } from '../src/api/expenses';
+import { today } from '../src/utils/dates';
+import { MEMBERS, expectGroupAccessErrorShown, expectRejectsNonPositiveAmounts, expectShowsPayerRemovedError }
+    from './expenseFormTestHelpers';
 
 vi.mock('../src/api/groups', () => ({
     getGroupMembers: vi.fn(),
@@ -13,18 +16,6 @@ vi.mock('../src/api/groups', () => ({
 vi.mock('../src/api/expenses', () => ({
     createExpense: vi.fn(),
 }));
-
-const MEMBERS = [
-    { userId: 1, username: 'alice', email: 'alice@test.com', netBalance: '0.00', currentUser: true },
-    { userId: 2, username: 'bob', email: 'bob@test.com', netBalance: '0.00', currentUser: false },
-];
-
-function today() {
-    const now = new Date();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const day = String(now.getDate()).padStart(2, '0');
-    return `${now.getFullYear()}-${month}-${day}`;
-}
 
 beforeEach(() => {
     vi.clearAllMocks();
@@ -84,14 +75,7 @@ it('AC3: rejects a zero, negative or non-numeric amount', async () => {
     await user.type(screen.getByLabelText('Description'), 'Groceries');
     await user.click(screen.getByRole('checkbox', { name: 'alice' }));
 
-    for (const value of ['0', '-5']) {
-        await user.clear(amount);
-        await user.type(amount, value);
-        await user.click(screen.getByRole('button', { name: 'Save expense' }));
-
-        expect(screen.getByText('Amount must be a positive number')).toBeInTheDocument();
-    }
-    expect(createExpense).not.toHaveBeenCalled();
+    await expectRejectsNonPositiveAmounts(user, amount, 'Save expense', createExpense);
 });
 
 it('AC5: only current group members are selectable as payer', async () => {
@@ -133,23 +117,16 @@ it('AC6: the date defaults to the local date, not the UTC one', async () => {
 });
 
 it('AC8: shows the error when the group is not readable', async () => {
-    getGroupMembers.mockResolvedValue({ error: 'You must be a group member to manage its members' });
-
-    renderPage();
-
-    expect(await screen.findByText('You must be a group member to manage its members'))
-        .toBeInTheDocument();
+    await expectGroupAccessErrorShown(getGroupMembers, renderPage);
 });
 
 it('AC5: shows the error when the payer is no longer a group member', async () => {
-    createExpense.mockResolvedValue({ errors: { form: 'Payer must be a member of the group' } });
     const user = userEvent.setup();
     renderPage();
 
     await user.type(await screen.findByLabelText('Amount'), '10');
     await user.type(screen.getByLabelText('Description'), 'Taxi');
     await user.click(screen.getByRole('checkbox', { name: 'alice' }));
-    await user.click(screen.getByRole('button', { name: 'Save expense' }));
 
-    expect(await screen.findByText('Payer must be a member of the group')).toBeInTheDocument();
+    await expectShowsPayerRemovedError(user, createExpense, 'Save expense');
 });

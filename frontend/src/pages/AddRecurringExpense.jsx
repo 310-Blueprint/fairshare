@@ -1,36 +1,56 @@
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { createExpense } from '../api/expenses';
-import ExpenseForm from '../components/ExpenseForm';
+import { createRecurringExpense } from '../api/recurringExpenses';
+import RecurringExpenseForm from '../components/RecurringExpenseForm';
 import { today } from '../utils/dates';
 import { validateSharedExpenseFields } from '../utils/expenseValidation';
 import { useGroupMembersForm } from '../utils/useGroupMembersForm';
 import './AddExpense.css';
 
-function validate({ amount, description, paidByUserId, expenseDate, participantUserIds }) {
+// Generation splits into whole cents, so a fractional cent (e.g. 10.005) can't be split exactly.
+function hasMoreThanTwoDecimalPlaces(amount) {
+    const decimalIndex = amount.indexOf('.');
+    return decimalIndex !== -1 && amount.length - decimalIndex - 1 > 2;
+}
+
+function validate({ amount, description, paidByUserId, frequency, startDate, endDate, participantUserIds }) {
     const errors = validateSharedExpenseFields({ amount, description, paidByUserId, participantUserIds });
 
-    if (expenseDate > today()) {
-        errors.expenseDate = 'Expense date cannot be in the future';   // AC6
+    if (!errors.amount && hasMoreThanTwoDecimalPlaces(amount.trim())) {
+        errors.amount = 'Amounts should only have up to 2 decimal places.';
+    }
+
+    if (frequency === '') {
+        errors.frequency = 'Frequency is required';
+    }
+
+    if (startDate === '') {
+        errors.startDate = 'Start date is required';
+    }
+
+    if (endDate && endDate < startDate) {
+        errors.endDate = 'End date cannot be before the start date';
     }
 
     return errors;
 }
 
-function AddExpense() {
+function AddRecurringExpense() {
     const { id } = useParams();
     const navigate = useNavigate();
     const { members, paidByUserId, setPaidByUserId, loading, errors, setErrors } = useGroupMembersForm(id);
     const [amount, setAmount] = useState('');
     const [description, setDescription] = useState('');
-    const [expenseDate, setExpenseDate] = useState(today());   // AC6
+    const [frequency, setFrequency] = useState('');
+    const [startDate, setStartDate] = useState(today());
+    const [endDate, setEndDate] = useState('');
     const [submitting, setSubmitting] = useState(false);
-    const [participantUserIds, setParticipantUserIds] = useState([]);  // #8 AC3
+    const [participantUserIds, setParticipantUserIds] = useState([]);
 
     async function handleSubmit(event) {
         event.preventDefault();
 
-        const found = validate({ amount, description, paidByUserId, expenseDate, participantUserIds });
+        const found = validate({ amount, description, paidByUserId, frequency, startDate, endDate, participantUserIds });
         if (Object.keys(found).length > 0) {
             setErrors(found);
             return;
@@ -40,11 +60,13 @@ function AddExpense() {
         setErrors({});
 
         try {
-            const result = await createExpense(id, {
+            const result = await createRecurringExpense(id, {
                 amount,
                 description,
                 paidByUserId: Number(paidByUserId),
-                expenseDate,
+                frequency,
+                startDate,
+                endDate: endDate || null,
                 participantUserIds: participantUserIds.map(Number)
             });
 
@@ -53,9 +75,9 @@ function AddExpense() {
                 return;
             }
 
-            navigate(`/groups/${id}`);          // AC7: back to the list the expense now appears in
+            navigate(`/groups/${id}`);
         } catch {
-            setErrors({ form: 'Could not add this expense. Please try again.' });
+            setErrors({ form: 'Could not add this recurring expense. Please try again.' });
         } finally {
             setSubmitting(false);
         }
@@ -68,14 +90,16 @@ function AddExpense() {
     return (
         <div className="page">
             <div className="card">
-                <h1>Add an expense</h1>
-                <p className="subtitle">Split equally among selected members</p>
+                <h1>Add a recurring expense</h1>
+                <p className="subtitle">Automatically split on a schedule</p>
 
-                <ExpenseForm
+                <RecurringExpenseForm
                     amount={amount}
                     description={description}
                     paidByUserId={paidByUserId}
-                    expenseDate={expenseDate}
+                    frequency={frequency}
+                    startDate={startDate}
+                    endDate={endDate}
                     participantUserIds={participantUserIds}
                     members={members}
                     errors={errors}
@@ -83,10 +107,11 @@ function AddExpense() {
                     onAmountChange={setAmount}
                     onDescriptionChange={setDescription}
                     onPaidByUserIdChange={setPaidByUserId}
-                    onExpenseDateChange={setExpenseDate}
+                    onFrequencyChange={setFrequency}
+                    onStartDateChange={setStartDate}
+                    onEndDateChange={setEndDate}
                     onParticipantUserIdsChange={setParticipantUserIds}
                     onSubmit={handleSubmit}
-                    maxExpenseDate={today()}
                 />
 
                 <Link to={`/groups/${id}`}>Back to the group</Link>
@@ -95,4 +120,4 @@ function AddExpense() {
     );
 }
 
-export default AddExpense;
+export default AddRecurringExpense;

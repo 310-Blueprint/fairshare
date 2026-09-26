@@ -8,6 +8,8 @@ import nz.ac.auckland.se310.fairshare.model.ExpenseGroup;
 import nz.ac.auckland.se310.fairshare.model.Settlement;
 import nz.ac.auckland.se310.fairshare.model.User;
 import nz.ac.auckland.se310.fairshare.repository.ExpenseGroupRepository;
+import nz.ac.auckland.se310.fairshare.repository.RecurringExpenseParticipantRepository;
+import nz.ac.auckland.se310.fairshare.repository.RecurringExpenseRepository;
 import nz.ac.auckland.se310.fairshare.repository.SettlementRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -36,6 +38,10 @@ class ExpenseGroupServiceSettlementPersistenceTest {
     UserRepository userRepository;
     @Mock
     ExpenseService expenseService;
+    @Mock
+    RecurringExpenseRepository recurringExpenseRepository;
+    @Mock
+    RecurringExpenseParticipantRepository recurringExpenseParticipantRepository;
 
     private ExpenseGroupService service;
 
@@ -66,7 +72,8 @@ class ExpenseGroupServiceSettlementPersistenceTest {
         group.addMember(bobUser);
         ReflectionTestUtils.setField(group, "id", GROUP_ID);
 
-        service = new ExpenseGroupService(groupRepository, userRepository, expenseService, settlementRepository);
+        service = new ExpenseGroupService(groupRepository, userRepository, expenseService, settlementRepository,
+                recurringExpenseRepository, recurringExpenseParticipantRepository);
 
         lenient().when(groupRepository.findByIdAndMembersUserId(GROUP_ID, ALICE)).thenReturn(Optional.of(group));
         lenient().when(groupRepository.findByIdAndMembersUserId(GROUP_ID, BOB)).thenReturn(Optional.of(group));
