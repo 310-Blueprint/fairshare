@@ -2,18 +2,15 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { validateUserProfile } from './utils/userValidation';
 import {API_BASE} from "./api/config.js";
+import { useCurrencies } from './utils/useCurrencies';
 
 const countries = [
   { name: 'New Zealand', value: 'NEW_ZEALAND', currency: 'NZD' },
   { name: 'Australia', value: 'AUSTRALIA', currency: 'AUD' }
 ];
 
-const currencies = [
-  'NZD',
-  'AUD'
-];
-
 function UserProfile() {
+  const { currencies, currenciesError } = useCurrencies();   // #14: any supported currency
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [email, setEmail] = useState('');
@@ -144,12 +141,13 @@ function UserProfile() {
             >
               <option value="">Select your currency</option>
               {currencies.map((curr) => (
-                <option key={curr} value={curr}>
-                  {curr}
+                <option key={curr.code} value={curr.code}>
+                  {curr.code} — {curr.name}
                 </option>
               ))}
             </select>
             {errors.currency && <span className="error">{errors.currency}</span>}
+            {currenciesError && <span className="error">{currenciesError}</span>}
           </div>
 
           <button type="submit">Create Profile</button>

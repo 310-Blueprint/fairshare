@@ -4,6 +4,7 @@ import {getGroup, getGroupMembers} from '../api/groups';
 import {getExpenses} from '../api/expenses';
 import {getRecurringExpenses} from '../api/recurringExpenses';
 import SettlementView from './SettlementView';
+import {formatExpenseAmount} from '../utils/formatExpenseAmount';
 import './GroupPage.css';
 
 const FREQUENCY_LABELS = {
@@ -142,7 +143,7 @@ function GroupPage() {
                                         )}
                                     </span>
                                     <span className="expense-amount">
-                                        {money(group.baseCurrency, expense.amount)}
+                                        {formatExpenseAmount(expense, group.baseCurrency)}
                                     </span>
                                 </li>
                             ))}

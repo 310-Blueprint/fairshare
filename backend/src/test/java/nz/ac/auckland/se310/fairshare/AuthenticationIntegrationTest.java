@@ -50,12 +50,16 @@ class AuthenticationIntegrationTest {
     }
 
     private void register(String username, String email) {
+        register(username, email, "NZD");
+    }
+
+    private void register(String username, String email, String currency) {
         mvc.post().uri("/users/register")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                         {"username":"%s","password":"%s","email":"%s",
-                         "country":"NEW_ZEALAND","currency":"NZD"}
-                        """.formatted(username, PASSWORD, email))
+                         "country":"NEW_ZEALAND","currency":"%s"}
+                        """.formatted(username, PASSWORD, email, currency))
                 .exchange();
     }
 
@@ -76,6 +80,33 @@ class AuthenticationIntegrationTest {
     void unauthenticatedRequestsReturnUnauthorized() {
         assertThat(mvc.get().uri("/users/me")).hasStatus(HttpStatus.UNAUTHORIZED);
         assertThat(mvc.get().uri("/groups")).hasStatus(HttpStatus.UNAUTHORIZED);
+    }
+
+    @Test
+    void currencyListIsPublicSoTheRegisterPageCanShowIt() {
+        assertThat(mvc.get().uri("/currencies"))
+                .hasStatusOk()
+                .bodyJson().extractingPath("$[?(@.code == 'USD')].name").asArray().containsExactly("US Dollar");
+    }
+
+    @Test
+    void homeCurrencyCanBeAnySupportedCurrencyAndBecomesTheGroupCurrency() {
+        String carolEmail = "carol.auth@test.com";
+        if (userRepository.findByEmailIgnoreCase(carolEmail).isEmpty()) {
+            register("carol", carolEmail, "USD");
+        }
+        MockHttpSession session = login(carolEmail);
+
+        assertThat(mvc.get().uri("/users/me").session(session))
+                .hasStatusOk()
+                .bodyJson().extractingPath("$.user.currency").isEqualTo("USD");
+
+        assertThat(mvc.post().uri("/groups")
+                .session(session)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"name\":\"LA trip\"}"))
+                .hasStatus(HttpStatus.CREATED)
+                .bodyJson().extractingPath("$.baseCurrency").isEqualTo("USD");
     }
 
     @Test

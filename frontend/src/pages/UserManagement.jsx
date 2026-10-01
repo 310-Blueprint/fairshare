@@ -2,15 +2,15 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { validateUserProfile } from '../utils/userValidation';
 import {getCurrentUser, logout, updateCurrentUser} from "../api/users.js";
+import { useCurrencies } from '../utils/useCurrencies';
 
 const countries = [
   { name: 'New Zealand', value: 'NEW_ZEALAND', currency: 'NZD' },
   { name: 'Australia', value: 'AUSTRALIA', currency: 'AUD' }
 ];
 
-const currencies = ['NZD', 'AUD'];
-
 function UserManagement() {
+  const { currencies, currenciesError } = useCurrencies();   // #14: any supported currency
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [email, setEmail] = useState('');
@@ -169,12 +169,13 @@ function UserManagement() {
             <select id="currency" value={currency} onChange={(event) => setCurrency(event.target.value)}>
               <option value="">Select your currency</option>
               {currencies.map((item) => (
-                <option key={item} value={item}>
-                  {item}
+                <option key={item.code} value={item.code}>
+                  {item.code} — {item.name}
                 </option>
               ))}
             </select>
             {fieldErrors.currency && <span className="error">{fieldErrors.currency}</span>}
+            {currenciesError && <span className="error">{currenciesError}</span>}
           </div>
 
           {error && <div className="error">{error}</div>}

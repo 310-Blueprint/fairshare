@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { getGroup, getGroupMembers } from '../api/groups';
 import { getExpenses } from '../api/expenses';
+import { formatExpenseAmount } from '../utils/formatExpenseAmount';
 import './MemberBalance.css';
 
 function formatMoney(currency, value) {
@@ -105,7 +106,7 @@ function MemberBalance() {
                                         {expense.paidByUsername} paid on {expense.expenseDate}
                                     </span>
                                     <span className="expense-amount">
-                                        {formatMoney(group.baseCurrency, expense.amount)}
+                                        {formatExpenseAmount(expense, group.baseCurrency)}
                                     </span>
                                 </li>
                             ))}

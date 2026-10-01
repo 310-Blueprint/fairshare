@@ -13,10 +13,13 @@ public class User {
     // Add more countries as needed
   }
 
+  /**
+   * ISO 4217 codes FairShare supports, as a member's home currency, a group's base currency
+   * and an expense's currency (#14). Each must also be quoted by the exchange rate provider.
+   */
   public enum Currency {
-    NZD,
-    AUD
-    // Add more currencies as needed
+    AUD, BRL, CAD, CHF, CNY, DKK, EUR, GBP, HKD, IDR, INR, JPY,
+    KRW, MXN, MYR, NOK, NZD, PHP, SEK, SGD, THB, USD, ZAR
   }
 
   @Id

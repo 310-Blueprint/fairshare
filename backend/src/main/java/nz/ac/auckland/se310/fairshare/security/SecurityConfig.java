@@ -2,6 +2,7 @@ package nz.ac.auckland.se310.fairshare.security;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.Customizer;
@@ -25,6 +26,8 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth ->
                         auth.requestMatchers("/users/register", "/users/login", "/users/logout").permitAll()
+                                // The register page lists currencies before anyone is logged in.
+                                .requestMatchers(HttpMethod.GET, "/currencies").permitAll()
                                 .anyRequest().authenticated())
                         // Unauthenticated requests get 401 so the frontend can distinguish
                         // "not logged in" from a 403 permission error and only redirect on the former.

@@ -25,7 +25,7 @@ public class Settlement {
     @JoinColumn(name = "to_user", nullable = false)
     private User toUser;
 
-    @Column(nullable = false, precision = 10, scale = 2)
+    @Column(nullable = false, precision = 19, scale = 2)
     private BigDecimal amount;
 
     @Column

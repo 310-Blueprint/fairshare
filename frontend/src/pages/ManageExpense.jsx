@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { getGroupMembers } from '../api/groups';
 import { getExpense, updateExpense } from '../api/expenses';
+import { getCurrencies } from '../api/currencies';
 import ExpenseForm from '../components/ExpenseForm';
 import './ManageExpense.css';
 
@@ -13,6 +14,8 @@ function EditExpense() {
     const [submitting, setSubmitting] = useState(false);
     const [errors, setErrors] = useState({});
     const [amount, setAmount] = useState('');
+    const [currency, setCurrency] = useState('');
+    const [currencies, setCurrencies] = useState([]);
     const [description, setDescription] = useState('');
     const [paidByUserId, setPaidByUserId] = useState('');
     const [expenseDate, setExpenseDate] = useState('');
@@ -22,9 +25,10 @@ function EditExpense() {
     // Populate the edit form from the selected expense and the current group membership.
     useEffect(() => {
         async function loadData() {
-            const [membersResult, expenseResult] = await Promise.all([
+            const [membersResult, expenseResult, currencyResult] = await Promise.all([
                 getGroupMembers(id),
-                getExpense(id, expenseId)
+                getExpense(id, expenseId),
+                getCurrencies()
             ]);
 
             if (membersResult.error) {
@@ -32,10 +36,18 @@ function EditExpense() {
             } else {
                 setMembers(membersResult.members);
             }
+            if (currencyResult.error) {
+                setErrors({ form: currencyResult.error });
+            } else {
+                setCurrencies(currencyResult.currencies);
+            }
             if (expenseResult.error) {
                 setErrors({ form: expenseResult.error });
             } else {
-                setAmount(String(expenseResult.expense.amount));
+                // #14: edit what the member originally entered, not the converted amount.
+                const { expense } = expenseResult;
+                setAmount(String(expense.originalAmount ?? expense.amount));
+                setCurrency(expense.originalCurrency ?? '');
                 setDescription(expenseResult.expense.description);
                 setPaidByUserId(String(expenseResult.expense.paidByUserId));
                 setExpenseDate(expenseResult.expense.expenseDate);
@@ -65,6 +77,7 @@ function EditExpense() {
         try {
             const result = await updateExpense(id, expenseId, {
                 amount,
+                currency,
                 description,
                 paidByUserId: Number(paidByUserId),
                 expenseDate,
@@ -93,6 +106,8 @@ function EditExpense() {
                 <p className="subtitle">Edit the details of this expense</p>
                 <ExpenseForm
                     amount={amount}
+                    currency={currency}
+                    currencies={currencies}
                     description={description}
                     paidByUserId={paidByUserId}
                     expenseDate={expenseDate}
@@ -101,6 +116,7 @@ function EditExpense() {
                     errors={errors}
                     submitting={submitting}
                     onAmountChange={setAmount}
+                    onCurrencyChange={setCurrency}
                     onDescriptionChange={setDescription}
                     onPaidByUserIdChange={setPaidByUserId}
                     onExpenseDateChange={setExpenseDate}

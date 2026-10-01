@@ -95,6 +95,23 @@ it('AC7: lists each expense with amount, description, payer and date', async () 
     expect(screen.getByText('NZD 10.00')).toBeInTheDocument();
 });
 
+it('#14 AC1: the history keeps the original amount and currency of a foreign expense', async () => {
+    getExpenses.mockResolvedValue({
+        expenses: [
+            {
+                id: 3, groupId: 1, paidByUserId: 1, paidByUsername: 'alice',
+                amount: '34.11', description: 'Dinner in LA', expenseDate: '2026-08-20',
+                createdAt: '2026-08-20T00:00:00Z',
+                originalAmount: '20.00', originalCurrency: 'USD', exchangeRate: '1.7056',
+            },
+        ],
+    });
+
+    renderPage();
+
+    expect(await screen.findByText('USD 20.00 (≈ NZD 34.11)')).toBeInTheDocument();
+});
+
 it('#13 AC1, AC4: lists each recurring expense with its frequency, payer and active/ended status', async () => {
     getRecurringExpenses.mockResolvedValue({
         recurringExpenses: [
