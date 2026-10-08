@@ -20,7 +20,8 @@
     <properties>
         <java.version>21</java.version>
         <jackson-bom.version>3.1.7</jackson-bom.version>
-        <tess4j.version>5.20.0</tess4j.version>
+        <!-- Ubuntu 24.04 provides Tesseract 5.3.x; keep the JNA wrapper ABI-compatible. -->
+        <tess4j.version>5.11.0</tess4j.version>
         <!-- Override vulnerable versions currently managed by Spring Boot. -->
         <tomcat.version>11.0.26</tomcat.version>
         <logback.version>1.6.3</logback.version>
