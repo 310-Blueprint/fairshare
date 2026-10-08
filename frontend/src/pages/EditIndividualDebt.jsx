@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { getMyIndividualDebts, updateIndividualDebt } from '../api/individualDebts';
 import { today } from '../utils/dates';
+import { AmountField, DescriptionField, FieldError } from '../components/ExpenseFormFields';
+import { DateField, IdentifierField } from '../components/IndividualDebtFormFields';
 
 function EditIndividualDebt() {
     const { otherUserId, entryId } = useParams();
@@ -24,7 +26,7 @@ function EditIndividualDebt() {
                     return;
                 }
                 const entry = result.debts.find((candidate) => String(candidate.id) === entryId);
-                if (!entry || !entry.canEdit) {
+                if (!entry?.canEdit) {
                     setErrors({ form: 'This entry could not be found, or you did not create it.' });
                     return;
                 }
@@ -39,7 +41,7 @@ function EditIndividualDebt() {
                 setLoading(false);
             }
         }
-        load();
+        void load();
     }, [entryId]);
 
     async function handleSubmit(event) {
@@ -57,7 +59,7 @@ function EditIndividualDebt() {
                 setErrors({ form: result.error });
                 return;
             }
-            navigate(`/debts/${otherUserId}`);
+            void navigate(`/debts/${otherUserId}`);
         } catch {
             setErrors({ form: 'Could not save this entry. Please try again.' });
         } finally {
@@ -84,61 +86,29 @@ function EditIndividualDebt() {
                 <h1>Edit entry</h1>
 
                 <form onSubmit={handleSubmit} noValidate>
-                    <div className="form-group">
-                        <label htmlFor="payer">Who is owed?</label>
-                        <input
-                            id="payer"
-                            value={payerIdentifier}
-                            onChange={(event) => setPayerIdentifier(event.target.value)}
-                        />
-                        {errors.payerIdentifier && <span className="error">{errors.payerIdentifier}</span>}
-                    </div>
+                    <IdentifierField
+                        id="payer"
+                        label="Who is owed?"
+                        value={payerIdentifier}
+                        onChange={setPayerIdentifier}
+                        error={errors.payerIdentifier}
+                    />
 
-                    <div className="form-group">
-                        <label htmlFor="debtor">Who owes?</label>
-                        <input
-                            id="debtor"
-                            value={debtorIdentifier}
-                            onChange={(event) => setDebtorIdentifier(event.target.value)}
-                        />
-                        {errors.debtorIdentifier && <span className="error">{errors.debtorIdentifier}</span>}
-                    </div>
+                    <IdentifierField
+                        id="debtor"
+                        label="Who owes?"
+                        value={debtorIdentifier}
+                        onChange={setDebtorIdentifier}
+                        error={errors.debtorIdentifier}
+                    />
 
-                    <div className="form-group">
-                        <label htmlFor="amount">Amount</label>
-                        <input
-                            id="amount"
-                            type="number"
-                            step="0.01"
-                            value={amount}
-                            onChange={(event) => setAmount(event.target.value)}
-                        />
-                        {errors.amount && <span className="error">{errors.amount}</span>}
-                    </div>
+                    <AmountField value={amount} onChange={setAmount} error={errors.amount} />
 
-                    <div className="form-group">
-                        <label htmlFor="description">Description</label>
-                        <input
-                            id="description"
-                            value={description}
-                            onChange={(event) => setDescription(event.target.value)}
-                        />
-                        {errors.description && <span className="error">{errors.description}</span>}
-                    </div>
+                    <DescriptionField value={description} onChange={setDescription} error={errors.description} />
 
-                    <div className="form-group">
-                        <label htmlFor="date">Date</label>
-                        <input
-                            id="date"
-                            type="date"
-                            value={date}
-                            max={today()}
-                            onChange={(event) => setDate(event.target.value)}
-                        />
-                        {errors.date && <span className="error">{errors.date}</span>}
-                    </div>
+                    <DateField value={date} onChange={setDate} error={errors.date} max={today()} />
 
-                    {errors.form && <span className="error">{errors.form}</span>}
+                    <FieldError message={errors.form} />
 
                     <button type="submit" disabled={submitting}>
                         {submitting ? 'Saving...' : 'Save changes'}

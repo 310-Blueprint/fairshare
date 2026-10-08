@@ -3,6 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { createIndividualDebt } from '../api/individualDebts';
 import { validateIndividualDebtEntry } from '../utils/individualDebtValidation';
 import { today } from '../utils/dates';
+import { AmountField, DescriptionField, FieldError } from '../components/ExpenseFormFields';
+import { DateField, IdentifierField } from '../components/IndividualDebtFormFields';
 
 function AddIndividualDebt() {
     const navigate = useNavigate();
@@ -35,7 +37,7 @@ function AddIndividualDebt() {
                 setErrors({ form: result.error });
                 return;
             }
-            navigate('/debts');
+            void navigate('/debts');
         } catch {
             setErrors({ form: 'Could not record this debt. Please try again.' });
         } finally {
@@ -50,53 +52,27 @@ function AddIndividualDebt() {
                 <p className="subtitle">They owe you - the selected user becomes the debtor</p>
 
                 <form onSubmit={handleSubmit} noValidate>
-                    <div className="form-group">
-                        <label htmlFor="counterparty">Who owes you?</label>
-                        <input
-                            id="counterparty"
-                            value={counterpartyIdentifier}
-                            onChange={(event) => setCounterpartyIdentifier(event.target.value)}
-                            placeholder="name@example.com"
-                        />
-                        {errors.counterpartyIdentifier && <span className="error">{errors.counterpartyIdentifier}</span>}
-                    </div>
+                    <IdentifierField
+                        id="counterparty"
+                        label="Who owes you?"
+                        value={counterpartyIdentifier}
+                        onChange={setCounterpartyIdentifier}
+                        error={errors.counterpartyIdentifier}
+                        placeholder="name@example.com"
+                    />
 
-                    <div className="form-group">
-                        <label htmlFor="amount">Amount</label>
-                        <input
-                            id="amount"
-                            type="number"
-                            step="0.01"
-                            value={amount}
-                            onChange={(event) => setAmount(event.target.value)}
-                        />
-                        {errors.amount && <span className="error">{errors.amount}</span>}
-                    </div>
+                    <AmountField value={amount} onChange={setAmount} error={errors.amount} />
 
-                    <div className="form-group">
-                        <label htmlFor="description">Description</label>
-                        <input
-                            id="description"
-                            value={description}
-                            onChange={(event) => setDescription(event.target.value)}
-                            placeholder="What was it for?"
-                        />
-                        {errors.description && <span className="error">{errors.description}</span>}
-                    </div>
+                    <DescriptionField
+                        value={description}
+                        onChange={setDescription}
+                        error={errors.description}
+                        placeholder="What was it for?"
+                    />
 
-                    <div className="form-group">
-                        <label htmlFor="date">Date</label>
-                        <input
-                            id="date"
-                            type="date"
-                            value={date}
-                            max={today()}
-                            onChange={(event) => setDate(event.target.value)}
-                        />
-                        {errors.date && <span className="error">{errors.date}</span>}
-                    </div>
+                    <DateField value={date} onChange={setDate} error={errors.date} max={today()} />
 
-                    {errors.form && <span className="error">{errors.form}</span>}
+                    <FieldError message={errors.form} />
 
                     <button type="submit" disabled={submitting}>
                         {submitting ? 'Saving...' : 'Save'}

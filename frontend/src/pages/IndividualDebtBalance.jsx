@@ -36,7 +36,7 @@ function IndividualDebtBalance() {
                 setLoading(false);
             }
         }
-        load();
+        void load();
     }, [otherUserId]);
 
     async function handleDelete(entryId) {
@@ -88,7 +88,7 @@ function IndividualDebtBalance() {
                                         {' '}
                                         <Link to={`/debts/${otherUserId}/entries/${entry.id}/edit`}>Edit</Link>
                                         {' '}
-                                        <button type="button" onClick={() => handleDelete(entry.id)}>Delete</button>
+                                        <button type="button" onClick={() => void handleDelete(entry.id)}>Delete</button>
                                     </span>
                                 )}
                             </li>

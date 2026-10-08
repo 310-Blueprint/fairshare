@@ -32,7 +32,7 @@ function IndividualDebts() {
                 setLoading(false);
             }
         }
-        load();
+        void load();
     }, []);
 
     if (loading) return <div className="page"><p>Loading your balances...</p></div>;

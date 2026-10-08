@@ -28,6 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -152,7 +153,7 @@ public class IndividualDebtService {
     @Transactional(readOnly = true)
     public List<CounterpartyBalanceResponse> getBalancesOverview(Long currentUserId) {
         Set<Long> counterpartyIds = individualDebtRepository.findCounterpartyIds(currentUserId).stream()
-                .collect(Collectors.toCollection(java.util.LinkedHashSet::new));
+                .collect(Collectors.toCollection(LinkedHashSet::new));
 
         for (ExpenseGroup group : groupRepository.findByMembersUserIdOrderByCreatedAtDesc(currentUserId)) {
             for (UserInGroup member : group.getMembers()) {

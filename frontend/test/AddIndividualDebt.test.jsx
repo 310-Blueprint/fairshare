@@ -28,35 +28,19 @@ describe('AddIndividualDebt', () => {
         vi.clearAllMocks();
     });
 
-    it('AC9: rejects a zero amount without calling the API', async () => {
-        renderPage();
-
-        fillForm({ amount: '0' });
-        fireEvent.click(screen.getByRole('button', { name: /save/i }));
-
-        expect(await screen.findByText('Amount must be a positive number')).toBeInTheDocument();
-        expect(createIndividualDebt).not.toHaveBeenCalled();
-    });
-
-    it('AC9: a non-numeric amount cannot even be typed into the amount field', async () => {
+    it.each([
+        ['0', 'Amount must be a positive number'],
+        ['-5', 'Amount must be a positive number'],
         // type="number" rejects non-numeric characters at the DOM level (in jsdom as in a real
         // browser), so this falls through to the "required" message rather than "must be positive".
+        ['abc', 'Amount is required'],
+    ])('AC9: rejects an invalid amount (%s) without calling the API', async (amount, message) => {
         renderPage();
 
-        fillForm({ amount: 'abc' });
+        fillForm({ amount });
         fireEvent.click(screen.getByRole('button', { name: /save/i }));
 
-        expect(await screen.findByText('Amount is required')).toBeInTheDocument();
-        expect(createIndividualDebt).not.toHaveBeenCalled();
-    });
-
-    it('AC9: rejects a negative amount without calling the API', async () => {
-        renderPage();
-
-        fillForm({ amount: '-5' });
-        fireEvent.click(screen.getByRole('button', { name: /save/i }));
-
-        expect(await screen.findByText('Amount must be a positive number')).toBeInTheDocument();
+        expect(await screen.findByText(message)).toBeInTheDocument();
         expect(createIndividualDebt).not.toHaveBeenCalled();
     });
 
