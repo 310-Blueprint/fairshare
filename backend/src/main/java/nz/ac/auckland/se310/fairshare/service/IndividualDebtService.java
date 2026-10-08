@@ -22,6 +22,7 @@ import nz.ac.auckland.se310.fairshare.repository.ExpenseShareRepository;
 import nz.ac.auckland.se310.fairshare.repository.IndividualDebtRepository;
 import nz.ac.auckland.se310.fairshare.repository.SettlementRepository;
 import nz.ac.auckland.se310.fairshare.UserRepository;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -43,16 +44,21 @@ public class IndividualDebtService {
     private final ExpenseRepository expenseRepository;
     private final ExpenseShareRepository expenseShareRepository;
     private final SettlementRepository settlementRepository;
+    // #3: injected lazily so getBalancesOverview calls getNetBalance through the Spring proxy
+    // (and therefore under @Transactional) rather than bypassing it via a direct "this" call.
+    private final IndividualDebtService self;
 
     public IndividualDebtService(IndividualDebtRepository individualDebtRepository, UserRepository userRepository,
                                   ExpenseGroupRepository groupRepository, ExpenseRepository expenseRepository,
-                                  ExpenseShareRepository expenseShareRepository, SettlementRepository settlementRepository) {
+                                  ExpenseShareRepository expenseShareRepository, SettlementRepository settlementRepository,
+                                  @Lazy IndividualDebtService self) {
         this.individualDebtRepository = individualDebtRepository;
         this.userRepository = userRepository;
         this.groupRepository = groupRepository;
         this.expenseRepository = expenseRepository;
         this.expenseShareRepository = expenseShareRepository;
         this.settlementRepository = settlementRepository;
+        this.self = self;
     }
 
     // #3 AC1: the current user is always the payer when an entry is first created.
@@ -158,7 +164,7 @@ public class IndividualDebtService {
         }
 
         return counterpartyIds.stream()
-                .map(otherId -> getNetBalance(currentUserId, otherId))
+                .map(otherId -> self.getNetBalance(currentUserId, otherId))
                 .map(this::toCounterpartyResponse)
                 .toList();
     }
@@ -169,45 +175,60 @@ public class IndividualDebtService {
      * create a direct debt between the pair; completed settlements adjust for cash already moved.
      */
     private BigDecimal computeGroupSplitBalance(Long userAId, Long userBId) {
-        BigDecimal aOwesB = BigDecimal.ZERO;
-
+        BigDecimal total = BigDecimal.ZERO;
         for (ExpenseGroup group : groupRepository.findSharedGroups(userAId, userBId)) {
-            for (Expense expense : expenseRepository.findByGroupIdOrderByExpenseDateDesc(group.getId())) {
-                Long payerId = expense.getPaidBy().getId();
-                if (!payerId.equals(userAId) && !payerId.equals(userBId)) {
-                    continue; // neither of the pair paid - no direct debt between them from this expense
-                }
-
-                List<ExpenseShare> shares = expenseShareRepository.findByExpenseId(expense.getId());
-                if (payerId.equals(userBId)) {
-                    BigDecimal shareA = shareOf(shares, userAId);
-                    aOwesB = aOwesB.add(shareA);
-                } else {
-                    BigDecimal shareB = shareOf(shares, userBId);
-                    aOwesB = aOwesB.subtract(shareB);
-                }
-            }
-
-            for (Settlement settlement : settlementRepository.findByGroupId(group.getId())) {
-                if (settlement.getSettlementDate() == null) {
-                    continue; // not yet paid - the underlying expense debt above already reflects it
-                }
-                Long fromId = settlement.getFromUser().getId();
-                Long toId = settlement.getToUser().getId();
-                boolean isPairSettlement = (fromId.equals(userAId) && toId.equals(userBId))
-                        || (fromId.equals(userBId) && toId.equals(userAId));
-                if (!isPairSettlement) {
-                    continue;
-                }
-                if (fromId.equals(userAId)) {
-                    aOwesB = aOwesB.subtract(settlement.getAmount());
-                } else {
-                    aOwesB = aOwesB.add(settlement.getAmount());
-                }
-            }
+            total = total.add(expenseContribution(group, userAId, userBId));
+            total = total.add(settlementContribution(group, userAId, userBId));
         }
+        return total;
+    }
 
-        return aOwesB;
+    private BigDecimal expenseContribution(ExpenseGroup group, Long userAId, Long userBId) {
+        BigDecimal total = BigDecimal.ZERO;
+        for (Expense expense : expenseRepository.findByGroupIdOrderByExpenseDateDesc(group.getId())) {
+            total = total.add(expenseDebtBetweenPair(expense, userAId, userBId));
+        }
+        return total;
+    }
+
+    /** Positive means userA owes userB from this one expense; zero if neither of the pair paid it. */
+    private BigDecimal expenseDebtBetweenPair(Expense expense, Long userAId, Long userBId) {
+        Long payerId = expense.getPaidBy().getId();
+        List<ExpenseShare> shares = expenseShareRepository.findByExpenseId(expense.getId());
+        if (payerId.equals(userBId)) {
+            return shareOf(shares, userAId);
+        }
+        if (payerId.equals(userAId)) {
+            return shareOf(shares, userBId).negate();
+        }
+        return BigDecimal.ZERO;
+    }
+
+    private BigDecimal settlementContribution(ExpenseGroup group, Long userAId, Long userBId) {
+        BigDecimal total = BigDecimal.ZERO;
+        for (Settlement settlement : settlementRepository.findByGroupId(group.getId())) {
+            total = total.add(settlementDebtBetweenPair(settlement, userAId, userBId));
+        }
+        return total;
+    }
+
+    /**
+     * Positive means userA owes userB from this one completed settlement; zero if it's still open
+     * (the expense debt above already reflects it) or doesn't involve exactly this pair.
+     */
+    private BigDecimal settlementDebtBetweenPair(Settlement settlement, Long userAId, Long userBId) {
+        if (settlement.getSettlementDate() == null) {
+            return BigDecimal.ZERO;
+        }
+        Long fromId = settlement.getFromUser().getId();
+        Long toId = settlement.getToUser().getId();
+        if (fromId.equals(userAId) && toId.equals(userBId)) {
+            return settlement.getAmount().negate();
+        }
+        if (fromId.equals(userBId) && toId.equals(userAId)) {
+            return settlement.getAmount();
+        }
+        return BigDecimal.ZERO;
     }
 
     private BigDecimal shareOf(List<ExpenseShare> shares, Long userId) {

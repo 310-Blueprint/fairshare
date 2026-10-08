@@ -1,6 +1,7 @@
 package nz.ac.auckland.se310.fairshare.service;
 
 import nz.ac.auckland.se310.fairshare.UserRepository;
+import nz.ac.auckland.se310.fairshare.dto.CounterpartyBalanceResponse;
 import nz.ac.auckland.se310.fairshare.dto.CreateIndividualDebtRequest;
 import nz.ac.auckland.se310.fairshare.dto.NetBalanceResponse;
 import nz.ac.auckland.se310.fairshare.dto.UpdateIndividualDebtRequest;
@@ -11,6 +12,7 @@ import nz.ac.auckland.se310.fairshare.model.ExpenseGroup;
 import nz.ac.auckland.se310.fairshare.model.ExpenseShare;
 import nz.ac.auckland.se310.fairshare.model.IndividualDebt;
 import nz.ac.auckland.se310.fairshare.model.User;
+import nz.ac.auckland.se310.fairshare.model.UserInGroup;
 import nz.ac.auckland.se310.fairshare.repository.ExpenseGroupRepository;
 import nz.ac.auckland.se310.fairshare.repository.ExpenseRepository;
 import nz.ac.auckland.se310.fairshare.repository.ExpenseShareRepository;
@@ -23,6 +25,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -42,6 +45,7 @@ class IndividualDebtServiceTest {
 
     private static final long ALICE = 10L;
     private static final long BOB = 20L;
+    private static final long CAROL = 30L;
     private static final long GROUP_ID = 1L;
     private static final long EXPENSE_ID = 100L;
 
@@ -67,8 +71,12 @@ class IndividualDebtServiceTest {
         when(individualDebtRepository.findBetweenUsers(anyLong(), anyLong())).thenReturn(List.of());
         when(groupRepository.findSharedGroups(anyLong(), anyLong())).thenReturn(List.of());
 
+        // No Spring proxy exists in this test, so "self" is wired to a plain instance; that's
+        // equivalent here since there's no transactional interception to route through either way.
         service = new IndividualDebtService(individualDebtRepository, userRepository, groupRepository,
-                expenseRepository, expenseShareRepository, settlementRepository);
+                expenseRepository, expenseShareRepository, settlementRepository, null);
+        service = new IndividualDebtService(individualDebtRepository, userRepository, groupRepository,
+                expenseRepository, expenseShareRepository, settlementRepository, service);
     }
 
     @Test
@@ -176,6 +184,42 @@ class IndividualDebtServiceTest {
         assertThat(fromAlice.toUserId()).isEqualTo(fromBob.toUserId());
         assertThat(fromAlice.amount()).isEqualByComparingTo(fromBob.amount());
         assertThat(fromAlice.settled()).isEqualTo(fromBob.settled());
+    }
+
+    @Test
+    void ac4_overviewCombinesIndividualDebtCounterpartiesAndGroupmates() {
+        User carol = user(CAROL, "carol");
+        when(userRepository.findById(CAROL)).thenReturn(Optional.of(carol));
+
+        // Bob: a counterparty via an individual debt entry, no shared group.
+        when(individualDebtRepository.findCounterpartyIds(ALICE)).thenReturn(List.of(BOB));
+        IndividualDebt entry = new IndividualDebt(alice, alice, bob, new BigDecimal("12.00"), "Snacks", LocalDate.now());
+        when(individualDebtRepository.findBetweenUsers(ALICE, BOB)).thenReturn(List.of(entry));
+
+        // Carol: a counterparty only because she shares a group with Alice, no individual entries.
+        ExpenseGroup group = mock(ExpenseGroup.class);
+        UserInGroup aliceMembership = mock(UserInGroup.class);
+        when(aliceMembership.getUser()).thenReturn(alice);
+        UserInGroup carolMembership = mock(UserInGroup.class);
+        when(carolMembership.getUser()).thenReturn(carol);
+        when(group.getMembers()).thenReturn(Set.of(aliceMembership, carolMembership));
+        when(groupRepository.findByMembersUserIdOrderByCreatedAtDesc(ALICE)).thenReturn(List.of(group));
+
+        List<CounterpartyBalanceResponse> overview = service.getBalancesOverview(ALICE);
+
+        assertThat(overview).extracting(CounterpartyBalanceResponse::counterpartyUserId)
+                .containsExactlyInAnyOrder(BOB, CAROL);
+
+        CounterpartyBalanceResponse bobBalance = overview.stream()
+                .filter(balance -> balance.counterpartyUserId().equals(BOB)).findFirst().orElseThrow();
+        assertThat(bobBalance.settled()).isFalse();
+        assertThat(bobBalance.fromUserId()).isEqualTo(BOB);
+        assertThat(bobBalance.toUserId()).isEqualTo(ALICE);
+        assertThat(bobBalance.amount()).isEqualByComparingTo("12.00");
+
+        CounterpartyBalanceResponse carolBalance = overview.stream()
+                .filter(balance -> balance.counterpartyUserId().equals(CAROL)).findFirst().orElseThrow();
+        assertThat(carolBalance.settled()).isTrue();
     }
 
     private void setUpSharedGroupExpense(User payer, BigDecimal aliceShare, BigDecimal bobShare) {
