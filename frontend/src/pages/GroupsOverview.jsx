@@ -58,6 +58,7 @@ function GroupsOverview() {
                 </ul>
 
                 <Link to="/groups/new" className="create-link">Create group</Link>
+                <Link to="/debts" className="create-link">Individual debts</Link>
             </div>
         </div>
     );
