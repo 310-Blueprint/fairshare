@@ -4,6 +4,7 @@ import { getGroup } from '../api/groups';
 import { createExpense } from '../api/expenses';
 import { getCurrencies } from '../api/currencies';
 import ExpenseForm from '../components/ExpenseForm';
+import ReceiptScanner from '../components/ReceiptScanner';
 import { today } from '../utils/dates';
 import { validateSharedExpenseFields } from '../utils/expenseValidation';
 import { useGroupMembersForm } from '../utils/useGroupMembersForm';
@@ -100,15 +101,28 @@ function AddExpense() {
         }
     }
 
+    function applyReceipt({ total, description: receiptDescription }) {
+        setAmount(total);
+        setDescription((current) => current.trim() ? current : receiptDescription);
+        setErrors((current) => {
+            const next = { ...current };
+            delete next.amount;
+            delete next.description;
+            return next;
+        });
+    }
+
     if (loading || currenciesLoading) {
         return <div className="page"><p>Loading…</p></div>;
     }
 
     return (
         <div className="page">
-            <div className="card">
+            <div className="card expense-card">
                 <h1>Add an expense</h1>
                 <p className="subtitle">Split equally among selected members</p>
+
+                <ReceiptScanner groupId={id} onApply={applyReceipt} />
 
                 <ExpenseForm
                     amount={amount}

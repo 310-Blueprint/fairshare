@@ -20,6 +20,7 @@
     <properties>
         <java.version>21</java.version>
         <jackson-bom.version>3.1.5</jackson-bom.version>
+        <tess4j.version>5.18.0</tess4j.version>
         <!-- Aligns all embedded Tomcat modules on a release containing the security fixes tracked in #30. -->
         <tomcat.version>11.0.24</tomcat.version>
         <!-- Overrides the Boot-managed 1.5.34, which is affected by CVE-2026-13006. -->
@@ -80,6 +81,11 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-validation</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>net.sourceforge.tess4j</groupId>
+            <artifactId>tess4j</artifactId>
+            <version>${tess4j.version}</version>
         </dependency>
     </dependencies>
 

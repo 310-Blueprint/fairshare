@@ -6,3 +6,14 @@
     font-size: 14px;
     background: #fff;
 }
+
+.expense-card {
+    width: min(500px, calc(100vw - 32px));
+    margin: 24px 0;
+}
+
+@media (max-width: 480px) {
+    .expense-card {
+        padding: 28px 24px;
+    }
+}

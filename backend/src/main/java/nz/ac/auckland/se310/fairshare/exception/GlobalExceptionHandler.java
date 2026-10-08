@@ -5,6 +5,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -53,6 +54,25 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, String>> handleInvalidPayer(InvalidPayerException ex) {
         return ResponseEntity.badRequest()
                 .body(Map.of(ERROR_KEY, "Payer must be a member of the group"));
+    }
+
+    @ExceptionHandler(InvalidReceiptException.class)
+    public ResponseEntity<Map<String, String>> handleInvalidReceipt(InvalidReceiptException ex) {
+        return ResponseEntity.badRequest().body(Map.of(ERROR_KEY, ex.getMessage()));
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<Map<String, String>> handleOversizedReceipt(
+            MaxUploadSizeExceededException ex) {
+        return ResponseEntity.badRequest()
+                .body(Map.of(ERROR_KEY, "Choose a JPG or PNG image no larger than 10 MB."));
+    }
+
+    @ExceptionHandler(ReceiptExtractionException.class)
+    public ResponseEntity<Map<String, String>> handleReceiptExtraction(
+            ReceiptExtractionException ex) {
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY)
+                .body(Map.of(ERROR_KEY, ex.getMessage()));
     }
 
     @ExceptionHandler(UnsupportedCurrencyException.class)

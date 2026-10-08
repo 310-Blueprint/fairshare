@@ -13,6 +13,7 @@ The following works today:
 - Create a group and see the groups you belong to
 - Add members by email or username, remove members and leave a group
 - Record an expense with an amount, description, payer, date and the members it applies to
+- Scan a JPG or PNG receipt into editable items and prices, then apply its total to a new expense
 - Record an expense in any of 23 supported currencies. It is converted into the group's currency at the rate for the expense date, and the history shows both, e.g. `USD 20.00 (≈ NZD 34.11)`
 - Choose any supported currency as your home currency, which becomes the currency of groups you create
 - Split an expense equally across the selected members, accurate to the cent
@@ -28,7 +29,7 @@ The following is not built yet:
 - Exporting group data. Data is stored in MySQL and survives a restart, but nothing produces a download. See [issue #12](https://github.com/se310-fairshare/fairshare/issues/12).
 - Splitting by percentage, shares or exact amounts. Only the equal split exists.
 
-Work planned for the next iteration is tracked in the open issues, including individual debt tracking ([#2](https://github.com/se310-fairshare/fairshare/issues/2)), receipt scanning ([#5](https://github.com/se310-fairshare/fairshare/issues/5)), payment reminders ([#15](https://github.com/se310-fairshare/fairshare/issues/15)) and spending charts ([#16](https://github.com/se310-fairshare/fairshare/issues/16)).
+Work planned for the next iteration is tracked in the open issues, including individual debt tracking ([#2](https://github.com/se310-fairshare/fairshare/issues/2)), payment reminders ([#15](https://github.com/se310-fairshare/fairshare/issues/15)) and spending charts ([#16](https://github.com/se310-fairshare/fairshare/issues/16)).
 
 ## Technology stack
 
@@ -70,6 +71,7 @@ Either set them as environment variables:
 export SPRING_DATASOURCE_URL="jdbc:mysql://localhost:3306/fairshare"
 export SPRING_DATASOURCE_USERNAME="your_mysql_user"
 export SPRING_DATASOURCE_PASSWORD="your_mysql_password"
+export GEMINI_API_KEY="your_gemini_api_key"
 ```
 
 Or create a `backend/.env` file, which is read as a properties file:
@@ -78,9 +80,12 @@ Or create a `backend/.env` file, which is read as a properties file:
 spring.datasource.url=jdbc:mysql://localhost:3306/fairshare
 spring.datasource.username=your_mysql_user
 spring.datasource.password=your_mysql_password
+gemini.api-key=your_gemini_api_key
 ```
 
 Use the lower case property names in the file. The `SPRING_DATASOURCE_URL` spelling only works as an environment variable, and a `.env` file written that way is read but ignored, which leaves the application failing with "Failed to determine a suitable driver class". Each line is a plain `key=value` pair with no `export`. The file is ignored by Git and must never be committed.
+
+The Gemini key is optional. Receipt scanning uses Gemini for primary structured extraction when the key is configured and falls back to local Tesseract OCR when Gemini is unavailable. Receipt images are processed in memory and are not saved by FairShare. Copy `backend/.env.example` for the complete local configuration template.
 
 ### 3. Run the backend
 
@@ -111,6 +116,7 @@ The app is then at `http://localhost:5173`. Open it and register an account to g
 - **`http://localhost:8080/` returns 401 in a browser.** There is no route at the root, and everything except registering and logging in needs a session, so an unauthenticated request there is rejected before the missing route is reached. With a session it returns 404. Either way the backend has started.
 - **A fresh database has no accounts in it.** Register through the app.
 - **Foreign-currency expenses need internet access.** Exchange rates come from the free [Frankfurter API](https://frankfurter.dev), which publishes European Central Bank reference rates and needs no key. If it cannot be reached, an expense in another currency is rejected with an explanation and nothing is saved. Expenses in the group's own currency never call it. The address is set by `fairshare.exchange-rate.base-url` in `application.properties`.
+- **Receipt scanning works without a Gemini key, but extraction quality may be lower.** Without the key—or if Gemini fails—the backend automatically uses its local Tesseract fallback.
 
 ## Running the tests
 
@@ -195,6 +201,7 @@ All responses are JSON, and every route except registering, logging in and listi
 | GET | `/groups/{groupId}/expenses` | A group's expense history |
 | GET | `/groups/{groupId}/expenses/{expenseId}` | One expense |
 | PUT | `/groups/{groupId}/expenses/{expenseId}` | Edit an expense |
+| POST | `/groups/{groupId}/receipts/extract` | Extract editable purchase details from a receipt image |
 | POST | `/groups/{groupId}/recurring-expenses` | Create a recurring expense |
 | GET | `/groups/{groupId}/recurring-expenses` | A group's recurring expenses |
 | GET | `/groups/{groupId}/recurring-expenses/{recurringExpenseId}` | One recurring expense |
