@@ -65,7 +65,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, String>> handleOversizedReceipt(
             MaxUploadSizeExceededException ex) {
         return ResponseEntity.badRequest()
-                .body(Map.of(ERROR_KEY, "Choose a JPG or PNG image no larger than 10 MB."));
+                .body(Map.of(ERROR_KEY, "Choose a JPG or PNG image no larger than 7 MB."));
     }
 
     @ExceptionHandler(ReceiptExtractionException.class)

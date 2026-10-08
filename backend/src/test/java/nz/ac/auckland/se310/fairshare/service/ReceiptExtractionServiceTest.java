@@ -33,7 +33,7 @@ class ReceiptExtractionServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new ReceiptExtractionService(groupRepository, ocrClient, 10 * 1024 * 1024);
+        service = new ReceiptExtractionService(groupRepository, ocrClient, 7 * 1024 * 1024);
     }
 
     @Test
@@ -65,7 +65,7 @@ class ReceiptExtractionServiceTest {
                 .hasMessageContaining("JPG or PNG");
         assertThatThrownBy(() -> service.extract(4L, 7L, spoofedPng))
                 .isInstanceOf(InvalidReceiptException.class)
-                .hasMessageContaining("10 MB");
+                .hasMessageContaining("7 MB");
         verifyNoInteractions(ocrClient);
     }
 

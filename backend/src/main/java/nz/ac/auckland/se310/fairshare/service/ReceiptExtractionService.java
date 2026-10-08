@@ -18,7 +18,7 @@ import java.util.Map;
 public class ReceiptExtractionService {
 
     public static final String FILE_REQUIREMENTS =
-            "Choose a JPG or PNG image no larger than 10 MB.";
+            "Choose a JPG or PNG image no larger than 7 MB.";
 
     private static final Map<String, String> SUPPORTED_TYPES = Map.of(
             "image/jpeg", "jpeg",
@@ -31,7 +31,7 @@ public class ReceiptExtractionService {
     public ReceiptExtractionService(
             ExpenseGroupRepository groupRepository,
             ReceiptOcrClient ocrClient,
-            @Value("${receipt.max-file-size-bytes:10485760}") long maxFileSize) {
+            @Value("${receipt.max-file-size-bytes:7340032}") long maxFileSize) {
         this.groupRepository = groupRepository;
         this.ocrClient = ocrClient;
         this.maxFileSize = maxFileSize;

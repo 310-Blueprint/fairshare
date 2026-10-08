@@ -2,9 +2,9 @@ import { useState } from 'react';
 import { extractReceipt } from '../api/receipts.js';
 import './ReceiptScanner.css';
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024;
+const MAX_FILE_SIZE = 7 * 1024 * 1024;
 const ACCEPTED_TYPES = new Set(['image/jpeg', 'image/png']);
-const FILE_REQUIREMENTS = 'Choose a JPG or PNG image no larger than 10 MB.';
+const FILE_REQUIREMENTS = 'Choose a JPG or PNG image no larger than 7 MB.';
 
 function asMoney(value) {
     const number = Number(value);
@@ -44,6 +44,7 @@ function ReceiptScanner({ groupId, onApply }) {
 
             setReceipt({
                 items: result.receipt.items.map((item) => ({
+                    id: crypto.randomUUID(),
                     description: item.description,
                     price: asMoney(item.price),
                 })),
@@ -59,7 +60,7 @@ function ReceiptScanner({ groupId, onApply }) {
     function handleFile(event) {
         const file = event.target.files?.[0];
         event.target.value = '';
-        processFile(file);
+        void processFile(file);
     }
 
     function updateItem(index, field, value) {
@@ -159,7 +160,7 @@ function ReceiptScanner({ groupId, onApply }) {
                             onChange={handleFile}
                         />
                     </div>
-                    <small className="receipt-file-help">JPG or PNG · maximum 10 MB</small>
+                    <small className="receipt-file-help">JPG or PNG · maximum 7 MB</small>
                 </>
             )}
 
@@ -181,7 +182,7 @@ function ReceiptScanner({ groupId, onApply }) {
                     </div>
                     <div className="receipt-items">
                         {receipt.items.map((item, index) => (
-                            <div className="receipt-item" key={index}>
+                            <div className="receipt-item" key={item.id}>
                                 <label className="sr-only" htmlFor={`receipt-item-${index}`}>
                                     Item {index + 1} description
                                 </label>

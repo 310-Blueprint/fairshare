@@ -89,16 +89,16 @@ it('AC4: rejects an unsupported format before making an API request', async () =
     expect(extractReceipt).not.toHaveBeenCalled();
 });
 
-it('AC4: rejects an image larger than 10 MB before making an API request', async () => {
+it('AC4: rejects an image larger than 7 MB before making an API request', async () => {
     const user = userEvent.setup();
     render(<ReceiptScanner groupId="4" onApply={vi.fn()} />);
 
     await user.click(screen.getByRole('button', { name: /scan or upload receipt/i }));
-    const file = new File([new Uint8Array(10 * 1024 * 1024 + 1)], 'large.jpg', {
+    const file = new File([new Uint8Array(7 * 1024 * 1024 + 1)], 'large.jpg', {
         type: 'image/jpeg',
     });
     fireEvent.change(screen.getByLabelText('Choose image'), { target: { files: [file] } });
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('10 MB');
+    expect(await screen.findByRole('alert')).toHaveTextContent('7 MB');
     expect(extractReceipt).not.toHaveBeenCalled();
 });
