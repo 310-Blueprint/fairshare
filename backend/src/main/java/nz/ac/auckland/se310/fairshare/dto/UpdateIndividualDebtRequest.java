@@ -11,13 +11,14 @@ import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
-// #3 AC8: the creator may reassign either side of the entry, not just amount/description/date.
+// #2 AC8: the creator may swap which side of the entry each person is on, not just amount/description/date.
+// Users are named by ID rather than username, since usernames are not unique.
 public record UpdateIndividualDebtRequest(
-        @NotBlank(message = "Payer is required")
-        String payerIdentifier,
+        @NotNull(message = "Payer is required")
+        Long payerUserId,
 
-        @NotBlank(message = "Debtor is required")
-        String debtorIdentifier,
+        @NotNull(message = "Debtor is required")
+        Long debtorUserId,
 
         @NotNull(message = "Amount is required")
         @Positive(message = "Amount must be a positive number")
@@ -31,5 +32,8 @@ public record UpdateIndividualDebtRequest(
 
         @NotNull(message = "Date is required")
         @PastOrPresent(message = "Date cannot be in the future")
-        LocalDate date) {
+        LocalDate date,
+
+        // ISO 4217 code; null keeps the entry's current currency.
+        String currency) {
 }

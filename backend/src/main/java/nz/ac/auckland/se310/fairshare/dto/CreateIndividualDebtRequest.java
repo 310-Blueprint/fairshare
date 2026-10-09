@@ -11,7 +11,7 @@ import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
-// #3 AC1: the logged-in user is always the payer; counterpartyIdentifier names the debtor.
+// #2 AC1: the logged-in user is always the payer; counterpartyIdentifier names the debtor.
 public record CreateIndividualDebtRequest(
         @NotBlank(message = "Counterparty is required")
         String counterpartyIdentifier,
@@ -28,5 +28,8 @@ public record CreateIndividualDebtRequest(
 
         @NotNull(message = "Date is required")
         @PastOrPresent(message = "Date cannot be in the future")
-        LocalDate date) {
+        LocalDate date,
+
+        // ISO 4217 code; null means the creator's home currency. Checked by CurrencyService.
+        String currency) {
 }
