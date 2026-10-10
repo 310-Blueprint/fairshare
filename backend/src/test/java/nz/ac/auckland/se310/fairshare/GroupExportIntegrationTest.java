@@ -3,6 +3,8 @@ package nz.ac.auckland.se310.fairshare;
 import nz.ac.auckland.se310.fairshare.dto.CreateExpenseRequest;
 import nz.ac.auckland.se310.fairshare.dto.CreateGroupRequest;
 import nz.ac.auckland.se310.fairshare.dto.ExpenseResponse;
+import nz.ac.auckland.se310.fairshare.dto.MemberBalance;
+import nz.ac.auckland.se310.fairshare.dto.SettlementRequest;
 import nz.ac.auckland.se310.fairshare.exception.GroupAccessDeniedException;
 import nz.ac.auckland.se310.fairshare.model.User;
 import nz.ac.auckland.se310.fairshare.repository.ExpenseGroupRepository;
@@ -14,6 +16,8 @@ import nz.ac.auckland.se310.fairshare.service.ExpenseService;
 import nz.ac.auckland.se310.fairshare.service.GroupExportService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.openpdf.text.pdf.PdfReader;
+import org.openpdf.text.pdf.parser.PdfTextExtractor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
@@ -24,11 +28,13 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.mysql.MySQLContainer;
 import org.testcontainers.utility.DockerImageName;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
+import java.util.regex.Pattern;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -157,6 +163,109 @@ class GroupExportIntegrationTest {
     void csvAc6_unknownGroupIsRejectedTheSameWay() {
         assertThatThrownBy(() -> exportService.exportCsv(groupId + 1000, aliceId))
                 .isInstanceOf(GroupAccessDeniedException.class);
+    }
+
+    @Test
+    void pdfAc2_listsExpensesAndEachMembersPaidShareAndNetBalance() throws IOException {
+        groupService.addMember(groupId, CAROL_EMAIL, aliceId);
+        recordGroceriesAndDinner();
+
+        byte[] pdf = exportService.exportPdf(groupId, aliceId);
+        String text = pdfText(pdf);
+
+        assertThat(new String(pdf, 0, 5, StandardCharsets.US_ASCII)).isEqualTo("%PDF-");
+        assertThat(text).contains("Flat 3", "All amounts in NZD", "Expenses", "Member balances");
+        assertThat(text).containsPattern(row("2026-09-01", "Groceries", "30.00", "alice"));
+        assertThat(text).containsPattern(row("2026-09-05", "Dinner", "34.11 \\(USD 20.00\\)", "bob"));
+        assertThat(text).containsPattern(row("alice: 10.00; bob: 10.00; carol: 10.00"));
+        assertThat(text).containsPattern(row("alice: 17.06; bob: 17.05"));
+        // Member, total paid, total share, net balance (positive owes, negative is owed).
+        assertThat(text).containsPattern(row("alice", "30.00", "27.06", "-2.94"));
+        assertThat(text).containsPattern(row("bob", "34.11", "27.05", "-7.06"));
+        assertThat(text).containsPattern(row("carol", "0.00", "10.00", "10.00"));
+    }
+
+    @Test
+    void pdfAc2_netBalanceMatchesTheBalancesEndpointIncludingPaidSettlements() throws IOException {
+        groupService.addMember(groupId, CAROL_EMAIL, aliceId);
+        recordGroceriesAndDinner();
+        groupService.computeSettlement(groupId, carolId, new SettlementRequest(List.of()));
+        groupService.markSettlementPaid(groupId, carolId, bobId, carolId);
+
+        String text = pdfText(exportService.exportPdf(groupId, aliceId));
+
+        // Carol's 7.06 to Bob clears his balance, though his paid and share totals are unchanged.
+        assertThat(groupService.getBalances(groupId, aliceId))
+                .extracting(MemberBalance::balance)
+                .usingElementComparator(BigDecimal::compareTo)
+                .containsExactly(new BigDecimal("-2.94"), BigDecimal.ZERO, new BigDecimal("2.94"));
+        assertThat(text).containsPattern(row("alice", "30.00", "27.06", "-2.94"));
+        assertThat(text).containsPattern(row("bob", "34.11", "27.05", "0.00"));
+        assertThat(text).containsPattern(row("carol", "0.00", "10.00", "2.94"));
+    }
+
+    @Test
+    void pdfAc3_reflectsAnExpenseAddedAfterAnEarlierExport() throws IOException {
+        assertThat(pdfText(exportService.exportPdf(groupId, aliceId))).contains("No expenses recorded.");
+
+        expenseService.createExpense(groupId, new CreateExpenseRequest(
+                new BigDecimal("10.00"), "Taxi", aliceId, List.of(aliceId, bobId), SEPT_1), aliceId);
+
+        assertThat(pdfText(exportService.exportPdf(groupId, aliceId)))
+                .doesNotContain("No expenses recorded.")
+                .containsPattern(row("2026-09-01", "Taxi", "10.00", "alice"));
+    }
+
+    @Test
+    void pdfAc4_groupWithNoExpensesListsEveryMemberAtZero() throws IOException {
+        String text = pdfText(exportService.exportPdf(groupId, aliceId));
+
+        assertThat(text).contains("No expenses recorded.");
+        assertThat(text).containsPattern(row("alice", "0.00", "0.00", "0.00"));
+        assertThat(text).containsPattern(row("bob", "0.00", "0.00", "0.00"));
+    }
+
+    @Test
+    void pdf_rendersNonLatinCharactersInNamesAndDescriptions() throws IOException {
+        Long cafeGroupId = groupService.createGroup(new CreateGroupRequest("Café Zoë €", null), aliceId).id();
+        expenseService.createExpense(cafeGroupId, new CreateExpenseRequest(
+                new BigDecimal("12.00"), "Ужин – ΣΟΥΒΛΑΚΙ", aliceId, List.of(aliceId), SEPT_1), aliceId);
+
+        assertThat(pdfText(exportService.exportPdf(cafeGroupId, aliceId)))
+                .contains("Café Zoë €", "Ужин – ΣΟΥΒΛΑΚΙ");
+    }
+
+    @Test
+    void pdfAc6_nonMemberIsRejected() {
+        assertThatThrownBy(() -> exportService.exportPdf(groupId, carolId))
+                .isInstanceOf(GroupAccessDeniedException.class);
+    }
+
+    private void recordGroceriesAndDinner() {
+        expenseService.createExpense(groupId, new CreateExpenseRequest(
+                new BigDecimal("30.00"), "Groceries", aliceId, List.of(aliceId, bobId, carolId), SEPT_1), aliceId);
+        expenseService.createExpense(groupId, new CreateExpenseRequest(
+                new BigDecimal("20.00"), "Dinner", bobId, List.of(aliceId, bobId), SEPT_5, "USD"), aliceId);
+    }
+
+    private static String pdfText(byte[] pdf) throws IOException {
+        PdfReader reader = new PdfReader(pdf);
+        try {
+            PdfTextExtractor extractor = new PdfTextExtractor(reader);
+            StringBuilder text = new StringBuilder();
+            for (int page = 1; page <= reader.getNumberOfPages(); page++) {
+                text.append(extractor.getTextFromPage(page)).append('\n');
+            }
+            return text.toString();
+        } finally {
+            reader.close();
+        }
+    }
+
+    // Cells come out of the PDF in order, but the text extractor only sometimes puts whitespace
+    // between neighbouring cells, and a long cell may wrap onto another line.
+    private static Pattern row(String... cells) {
+        return Pattern.compile(String.join("\\s*", cells).replace(" ", "\\s+"));
     }
 
     private static String csvText(byte[] csv) {
