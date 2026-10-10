@@ -1,5 +1,6 @@
 package nz.ac.auckland.se310.fairshare.service;
 
+import nz.ac.auckland.se310.fairshare.dto.ExportedFile;
 import nz.ac.auckland.se310.fairshare.dto.MemberBalance;
 import nz.ac.auckland.se310.fairshare.exception.GroupAccessDeniedException;
 import nz.ac.auckland.se310.fairshare.model.Expense;
@@ -35,6 +36,7 @@ import java.time.Clock;
 import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -72,6 +74,20 @@ public class GroupExportService {
         this.expenseShareRepository = expenseShareRepository;
         this.groupService = groupService;
         this.clock = clock;
+    }
+
+    /**
+     * Generates the export in the requested format, named after the group and today's date,
+     * e.g. {@code fairshare-flat-3-2026-10-11.csv}.
+     */
+    @Transactional(readOnly = true)
+    public ExportedFile export(Long groupId, Long currentUserId, ExportFormat format) {
+        ExpenseGroup group = requireMemberGroup(groupId, currentUserId); // AC6
+        byte[] content = switch (format) {
+            case CSV -> exportCsv(groupId, currentUserId);
+            case PDF -> exportPdf(groupId, currentUserId);
+        };
+        return new ExportedFile(filename(group, format), format, content);
     }
 
     /**
@@ -175,6 +191,15 @@ public class GroupExportService {
                             + "from total share minus total paid.", noteFont));
         }
         return out.toByteArray();
+    }
+
+    // Letters and digits in any script are kept; everything else becomes a single hyphen.
+    private String filename(ExpenseGroup group, ExportFormat format) {
+        String slug = group.getGroupName().toLowerCase(Locale.ROOT)
+                .replaceAll("[^\\p{L}\\p{N}]+", "-")
+                .replaceAll("^-|-$", "");
+        return "fairshare-" + (slug.isEmpty() ? "group" : slug) + "-" + LocalDate.now(clock)
+                + "." + format.extension();
     }
 
     private ExpenseGroup requireMemberGroup(Long groupId, Long currentUserId) {
