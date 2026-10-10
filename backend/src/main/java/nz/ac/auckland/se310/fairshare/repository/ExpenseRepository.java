@@ -12,4 +12,7 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long> {
     List<Expense> findByGroupIdOrderByExpenseDateDesc(Long groupId);
 
     Optional<Expense> findByIdAndGroupId(Long expenseId, Long groupId);
+
+    // #12: oldest first for the export, with the id breaking ties between same-day expenses
+    List<Expense> findByGroupIdOrderByExpenseDateAscIdAsc(Long groupId);
 }
