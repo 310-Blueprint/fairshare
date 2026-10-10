@@ -20,12 +20,12 @@ The following works today:
 - Set up a recurring expense, such as rent or a subscription, with a weekly, fortnightly or monthly schedule and an optional end date; it generates expenses automatically, and each generated expense is marked in the history and links back to the recurring expense that created it
 - See each member's balance, and the transactions behind a single member's balance
 - Generate a settlement plan for a group and mark individual payments as paid
+- Export a group's expense data as a CSV file, which opens cleanly in Excel, or as a PDF that adds each member's total paid, total share and net balance. This is available through the API only; the frontend has no export button yet
 
 The following is not built yet:
 
 - Deleting an expense. Viewing and editing work, deletion has no endpoint or interface. See [issue #11](https://github.com/se310-fairshare/fairshare/issues/11).
 - Editing, pausing or deleting a recurring expense once it exists. Only creating and viewing them work.
-- Exporting group data. Data is stored in MySQL and survives a restart, but nothing produces a download. See [issue #12](https://github.com/se310-fairshare/fairshare/issues/12).
 - Splitting by percentage, shares or exact amounts. Only the equal split exists.
 
 Work planned for the next iteration is tracked in the open issues, including individual debt tracking ([#2](https://github.com/se310-fairshare/fairshare/issues/2)), receipt scanning ([#5](https://github.com/se310-fairshare/fairshare/issues/5)), payment reminders ([#15](https://github.com/se310-fairshare/fairshare/issues/15)) and spending charts ([#16](https://github.com/se310-fairshare/fairshare/issues/16)).
@@ -173,7 +173,7 @@ Frontend tests live in `frontend/test` rather than beside the source. `UserProfi
 
 ## API
 
-All responses are JSON, and every route except registering, logging in and listing currencies needs an authenticated session.
+All responses are JSON except the export, which is a file download, and every route except registering, logging in and listing currencies needs an authenticated session.
 
 | Method | Path | Purpose |
 | --- | --- | --- |
@@ -189,6 +189,7 @@ All responses are JSON, and every route except registering, logging in and listi
 | POST | `/groups/{id}/members` | Add a member |
 | DELETE | `/groups/{id}/members/{userId}` | Remove a member |
 | GET | `/groups/{id}/balances` | Balance per member |
+| GET | `/groups/{id}/export?format=csv\|pdf` | Download the group's expenses as CSV or PDF |
 | POST | `/groups/{id}/settlement` | Generate a settlement plan |
 | PATCH | `/groups/{id}/settlements/{fromUserId}/{toUserId}/paid` | Mark a payment as paid |
 | POST | `/groups/{groupId}/expenses` | Record an expense |
