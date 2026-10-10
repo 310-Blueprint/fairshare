@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { getBalancesOverview } from '../api/individualDebts';
+import { money } from '../utils/formatExpenseAmount';
 
 function balanceLine(balance) {
     if (balance.settled) {
@@ -9,7 +10,7 @@ function balanceLine(balance) {
     const direction = balance.fromUserId === balance.counterpartyUserId
         ? `${balance.counterpartyUsername} owes you`
         : `You owe ${balance.counterpartyUsername}`;
-    return `${direction} ${Number(balance.amount).toFixed(2)}`;
+    return `${direction} ${money(balance.currency, balance.amount)}`;
 }
 
 function IndividualDebts() {

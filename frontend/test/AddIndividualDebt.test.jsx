@@ -3,9 +3,14 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import AddIndividualDebt from '../src/pages/AddIndividualDebt.jsx';
 import { createIndividualDebt } from '../src/api/individualDebts';
+import { getCurrencies } from '../src/api/currencies';
 
 vi.mock('../src/api/individualDebts', () => ({
     createIndividualDebt: vi.fn(),
+}));
+
+vi.mock('../src/api/currencies', () => ({
+    getCurrencies: vi.fn(),
 }));
 
 function renderPage() {
@@ -26,6 +31,9 @@ function fillForm({ counterparty = 'bob', amount = '25.00', description = 'Lunch
 describe('AddIndividualDebt', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        getCurrencies.mockResolvedValue({
+            currencies: [{ code: 'NZD', name: 'New Zealand Dollar' }, { code: 'USD', name: 'US Dollar' }],
+        });
     });
 
     it.each([
@@ -62,8 +70,32 @@ describe('AddIndividualDebt', () => {
         fireEvent.click(screen.getByRole('button', { name: /save/i }));
 
         await waitFor(() => expect(createIndividualDebt).toHaveBeenCalledWith({
-            counterpartyIdentifier: 'bob', amount: '25.00', description: 'Lunch', date: '2026-10-01',
+            counterpartyIdentifier: 'bob', amount: '25.00', description: 'Lunch', date: '2026-10-01', currency: '',
         }));
         expect(await screen.findByText('No matching user was found')).toBeInTheDocument();
+    });
+
+    it('#2: sends the picked currency, defaulting to the home currency', async () => {
+        createIndividualDebt.mockResolvedValue({ debt: { id: 1 } });
+        renderPage();
+
+        expect(screen.getByLabelText(/currency/i)).toHaveValue('');
+        await screen.findByRole('option', { name: /USD/ });
+        fillForm();
+        fireEvent.change(screen.getByLabelText(/currency/i), { target: { value: 'USD' } });
+        fireEvent.click(screen.getByRole('button', { name: /save/i }));
+
+        await waitFor(() => expect(createIndividualDebt).toHaveBeenCalledWith(
+            expect.objectContaining({ currency: 'USD' })));
+    });
+
+    it('AC9: shows the server\'s "cannot be yourself" message', async () => {
+        createIndividualDebt.mockResolvedValue({ error: 'The counterparty cannot be yourself' });
+        renderPage();
+
+        fillForm({ counterparty: 'me@example.com' });
+        fireEvent.click(screen.getByRole('button', { name: /save/i }));
+
+        expect(await screen.findByText('The counterparty cannot be yourself')).toBeInTheDocument();
     });
 });

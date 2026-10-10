@@ -1,4 +1,4 @@
-import { AmountField, DescriptionField, PayerSelect, ParticipantsChecklist, FieldError } from './ExpenseFormFields';
+import { AmountField, CurrencyField, DescriptionField, PayerSelect, ParticipantsChecklist, FieldError } from './ExpenseFormFields';
 
 function ExpenseForm({
     amount,
@@ -24,22 +24,7 @@ function ExpenseForm({
         <form onSubmit={onSubmit} noValidate>
             <AmountField value={amount} onChange={onAmountChange} error={errors.amount} />
 
-            {/* #14 AC1, AC3: only supported ISO 4217 codes can be picked */}
-            <div className="form-group">
-                <label htmlFor="currency">Currency</label>
-                <select
-                    id="currency"
-                    value={currency}
-                    onChange={(event) => onCurrencyChange(event.target.value)}
-                >
-                    {currencies.map((option) => (
-                        <option key={option.code} value={option.code}>
-                            {option.code} — {option.name}
-                        </option>
-                    ))}
-                </select>
-                <FieldError message={errors.currency} />
-            </div>
+            <CurrencyField value={currency} currencies={currencies} onChange={onCurrencyChange} error={errors.currency} />
 
             <DescriptionField
                 value={description}

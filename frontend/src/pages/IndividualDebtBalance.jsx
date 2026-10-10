@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { deleteIndividualDebt, getBalanceWithUser } from '../api/individualDebts';
+import { money } from '../utils/formatExpenseAmount';
+// Shares the confirmation dialog styles with the group members page.
+import './GroupMembers.css';
 
 function netLine(balance) {
     if (balance.settled) {
@@ -8,11 +11,11 @@ function netLine(balance) {
     }
     const subject = balance.fromUserId === balance.otherUserId ? balance.otherUsername : 'You';
     const object = balance.toUserId === balance.otherUserId ? balance.otherUsername : 'you';
-    return `${subject} owe${subject === 'You' ? '' : 's'} ${object} ${Number(balance.amount).toFixed(2)}`;
+    return `${subject} owe${subject === 'You' ? '' : 's'} ${object} ${money(balance.currency, balance.amount)}`;
 }
 
 function entryLine(entry) {
-    return `${entry.payerUsername} is owed ${Number(entry.amount).toFixed(2)} by ${entry.debtorUsername}`;
+    return `${entry.payerUsername} is owed ${money(entry.currency, entry.amount)} by ${entry.debtorUsername}`;
 }
 
 function IndividualDebtBalance() {
@@ -20,6 +23,9 @@ function IndividualDebtBalance() {
     const [balance, setBalance] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [entryToDelete, setEntryToDelete] = useState(null);
+    const [deleting, setDeleting] = useState(false);
+    const [deleteError, setDeleteError] = useState(null);
 
     useEffect(() => {
         async function load() {
@@ -39,20 +45,30 @@ function IndividualDebtBalance() {
         void load();
     }, [otherUserId]);
 
-    async function handleDelete(entryId) {
+    async function handleDelete() {
+        setDeleting(true);
+        setDeleteError(null);
         try {
-            const result = await deleteIndividualDebt(entryId);
+            const result = await deleteIndividualDebt(entryToDelete.id);
             if (result.error) {
-                setError(result.error);
+                setDeleteError(result.error);
                 return;
             }
+            setEntryToDelete(null);
             const refreshed = await getBalanceWithUser(otherUserId);
             if (!refreshed.error) {
                 setBalance(refreshed.balance);
             }
         } catch {
-            setError('Could not delete this entry. Please try again.');
+            setDeleteError('Could not delete this entry. Please try again.');
+        } finally {
+            setDeleting(false);
         }
+    }
+
+    function closeDeleteConfirmation() {
+        setDeleteError(null);
+        setEntryToDelete(null);
     }
 
     if (loading) return <div className="page"><p>Loading balance...</p></div>;
@@ -88,7 +104,7 @@ function IndividualDebtBalance() {
                                         {' '}
                                         <Link to={`/debts/${otherUserId}/entries/${entry.id}/edit`}>Edit</Link>
                                         {' '}
-                                        <button type="button" onClick={() => void handleDelete(entry.id)}>Delete</button>
+                                        <button type="button" onClick={() => setEntryToDelete(entry)}>Delete</button>
                                     </span>
                                 )}
                             </li>
@@ -98,6 +114,29 @@ function IndividualDebtBalance() {
 
                 <Link to="/debts">Back to individual debts</Link>
             </div>
+
+            {entryToDelete && (
+                <div className="confirmation-backdrop">
+                    <div
+                        className="confirmation-dialog"
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="confirmation-title"
+                    >
+                        <h2 id="confirmation-title">Delete this entry?</h2>
+                        <p>{entryLine(entryToDelete)} - {entryToDelete.description}. This cannot be undone.</p>
+                        {deleteError && <p className="error" role="alert">{deleteError}</p>}
+                        <div className="confirmation-actions">
+                            <button type="button" className="cancel-button" disabled={deleting} onClick={closeDeleteConfirmation}>
+                                Cancel
+                            </button>
+                            <button type="button" className="confirm-remove-button" disabled={deleting} onClick={() => void handleDelete()}>
+                                {deleting ? 'Deleting...' : 'Delete'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

@@ -1,10 +1,7 @@
-// #3 AC9: amount must be a positive number, the counterparty and description are required.
-export function validateIndividualDebtEntry({ counterpartyIdentifier, amount, description, date }) {
+// #2 AC9: amount must be a positive number, and the description and date are required.
+// Shared by the add and edit pages.
+export function validateIndividualDebtDetails({ amount, description, date }) {
     const errors = {};
-
-    if (!counterpartyIdentifier || counterpartyIdentifier.trim() === '') {
-        errors.counterpartyIdentifier = 'Counterparty is required';
-    }
 
     if (amount === '' || amount === null || amount === undefined) {
         errors.amount = 'Amount is required';
@@ -21,4 +18,15 @@ export function validateIndividualDebtEntry({ counterpartyIdentifier, amount, de
     }
 
     return errors;
+}
+
+// #2 AC9: a new entry also needs a counterparty.
+export function validateIndividualDebtEntry({ counterpartyIdentifier, amount, description, date }) {
+    const errors = {};
+
+    if (!counterpartyIdentifier || counterpartyIdentifier.trim() === '') {
+        errors.counterpartyIdentifier = 'Counterparty is required';
+    }
+
+    return { ...errors, ...validateIndividualDebtDetails({ amount, description, date }) };
 }

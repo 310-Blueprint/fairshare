@@ -3,13 +3,16 @@ import { Link, useNavigate } from 'react-router-dom';
 import { createIndividualDebt } from '../api/individualDebts';
 import { validateIndividualDebtEntry } from '../utils/individualDebtValidation';
 import { today } from '../utils/dates';
-import { AmountField, DescriptionField, FieldError } from '../components/ExpenseFormFields';
+import { useCurrencies } from '../utils/useCurrencies';
+import { AmountField, CurrencyField, DescriptionField, FieldError } from '../components/ExpenseFormFields';
 import { DateField, IdentifierField } from '../components/IndividualDebtFormFields';
 
 function AddIndividualDebt() {
     const navigate = useNavigate();
     const [counterpartyIdentifier, setCounterpartyIdentifier] = useState('');
     const [amount, setAmount] = useState('');
+    const [currency, setCurrency] = useState(''); // empty means the user's home currency
+    const { currencies, currenciesError } = useCurrencies();
     const [description, setDescription] = useState('');
     const [date, setDate] = useState(today());
     const [submitting, setSubmitting] = useState(false);
@@ -28,7 +31,7 @@ function AddIndividualDebt() {
         setErrors({});
 
         try {
-            const result = await createIndividualDebt({ counterpartyIdentifier, amount, description, date });
+            const result = await createIndividualDebt({ counterpartyIdentifier, amount, description, date, currency });
             if (result.errors) {
                 setErrors(result.errors);
                 return;
@@ -62,6 +65,14 @@ function AddIndividualDebt() {
                     />
 
                     <AmountField value={amount} onChange={setAmount} error={errors.amount} />
+
+                    <CurrencyField
+                        value={currency}
+                        currencies={currencies}
+                        onChange={setCurrency}
+                        error={errors.currency || currenciesError}
+                        emptyLabel="My home currency"
+                    />
 
                     <DescriptionField
                         value={description}

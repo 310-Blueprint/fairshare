@@ -22,6 +22,28 @@ export function AmountField({ value, onChange, error }) {
     );
 }
 
+// #14 AC1, AC3: only supported ISO 4217 codes can be picked. emptyLabel adds a "no choice" option.
+export function CurrencyField({ value, currencies, onChange, error, emptyLabel }) {
+    return (
+        <div className="form-group">
+            <label htmlFor="currency">Currency</label>
+            <select
+                id="currency"
+                value={value}
+                onChange={(event) => onChange(event.target.value)}
+            >
+                {emptyLabel && <option value="">{emptyLabel}</option>}
+                {currencies.map((option) => (
+                    <option key={option.code} value={option.code}>
+                        {option.code} — {option.name}
+                    </option>
+                ))}
+            </select>
+            <FieldError message={error} />
+        </div>
+    );
+}
+
 export function DescriptionField({ value, onChange, error, placeholder }) {
     return (
         <div className="form-group">

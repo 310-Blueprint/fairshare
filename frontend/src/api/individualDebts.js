@@ -1,14 +1,22 @@
 import { apiFetch } from './config.js';
 import { readError, requirePositiveInteger } from './groups.js';
 
-export async function createIndividualDebt({ counterpartyIdentifier, amount, description, date }) {
+// A 400 is either per-field validation errors, or one form-level { error } such as
+// "The counterparty cannot be yourself", which no single field would display.
+async function readBadRequest(response) {
+    const body = await response.json();
+    return body.error ? { error: body.error } : { errors: body };
+}
+
+// currency is optional: left empty, the server uses the creator's home currency.
+export async function createIndividualDebt({ counterpartyIdentifier, amount, description, date, currency }) {
     const response = await apiFetch('/individual-debts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ counterpartyIdentifier, amount, description, date })
+        body: JSON.stringify({ counterpartyIdentifier, amount, description, date, currency: currency || null })
     });
     if (response.status === 400) {
-        return { errors: await response.json() };
+        return readBadRequest(response);
     }
     if (!response.ok) {
         return { error: await readError(response, 'Could not record this debt.') };
@@ -24,15 +32,16 @@ export async function getMyIndividualDebts() {
     return { debts: await response.json() };
 }
 
-export async function updateIndividualDebt(id, { payerIdentifier, debtorIdentifier, amount, description, date }) {
+// Users are sent by ID, since usernames are not unique.
+export async function updateIndividualDebt(id, { payerUserId, debtorUserId, amount, description, date, currency }) {
     const debtId = requirePositiveInteger(id, 'Debt ID');
     const response = await apiFetch(`/individual-debts/${debtId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ payerIdentifier, debtorIdentifier, amount, description, date })
+        body: JSON.stringify({ payerUserId, debtorUserId, amount, description, date, currency })
     });
     if (response.status === 400) {
-        return { errors: await response.json() };
+        return readBadRequest(response);
     }
     if (!response.ok) {
         return { error: await readError(response, 'Could not update this entry.') };
