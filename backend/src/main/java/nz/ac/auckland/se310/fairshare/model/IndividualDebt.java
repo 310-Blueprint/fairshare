@@ -14,7 +14,7 @@ public class IndividualDebt {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // #3 AC7: who recorded the entry. Immutable - unlike payer/debtor, this never changes on edit.
+    // #2 AC7: who recorded the entry. Immutable - unlike payer/debtor, this never changes on edit.
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "creator_id", nullable = false, updatable = false)
     private User creator;
@@ -32,6 +32,10 @@ public class IndividualDebt {
     @Column(nullable = false, precision = 19, scale = 2)
     private BigDecimal amount;
 
+    // ISO 4217 code the amount was recorded in; converted for display, never on save.
+    @Column(nullable = false, length = 3)
+    private String currency;
+
     @Column(nullable = false, length = 255)
     private String description;
 
@@ -43,11 +47,13 @@ public class IndividualDebt {
 
     protected IndividualDebt() {} // JPA
 
-    public IndividualDebt(User creator, User payer, User debtor, BigDecimal amount, String description, LocalDate debtDate) {
+    public IndividualDebt(User creator, User payer, User debtor, BigDecimal amount, String currency,
+                          String description, LocalDate debtDate) {
         this.creator = creator;
         this.payer = payer;
         this.debtor = debtor;
         this.amount = amount;
+        this.currency = currency;
         this.description = description;
         this.debtDate = debtDate;
         this.createdAt = Instant.now();
@@ -61,6 +67,8 @@ public class IndividualDebt {
     public void setDebtor(User debtor) { this.debtor = debtor; }
     public BigDecimal getAmount() { return amount; }
     public void setAmount(BigDecimal amount) { this.amount = amount; }
+    public String getCurrency() { return currency; }
+    public void setCurrency(String currency) { this.currency = currency; }
     public String getDescription() { return description; }
     public void setDescription(String description) { this.description = description; }
     public LocalDate getDebtDate() { return debtDate; }

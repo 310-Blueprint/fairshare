@@ -18,7 +18,7 @@ public interface ExpenseGroupRepository extends JpaRepository<ExpenseGroup, Long
     @EntityGraph(attributePaths = {"members", "members.user"})
     List<ExpenseGroup> findByMembersUserIdOrderByCreatedAtDesc(Long userId);
 
-    // #3 AC3: groups both users belong to, so group-split debts can be combined with individual entries.
+    // #2 AC3: groups both users belong to, so group-split debts can be combined with individual entries.
     @EntityGraph(attributePaths = {"members", "members.user"})
     @Query(
             "select g from ExpenseGroup g join g.members m1 join g.members m2 "
