@@ -5,7 +5,7 @@ export function validateIndividualDebtDetails({ amount, description, date }) {
 
     if (amount === '' || amount === null || amount === undefined) {
         errors.amount = 'Amount is required';
-    } else if (Number.isNaN(Number(amount)) || !(Number(amount) > 0)) {
+    } else if (Number.isNaN(Number(amount)) || Number(amount) <= 0) {
         errors.amount = 'Amount must be a positive number';
     }
 

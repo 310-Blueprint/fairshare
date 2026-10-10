@@ -199,14 +199,36 @@ class IndividualDebtServiceTest {
     }
 
     @Test
-    void ac8_editingNeverChangesWhoOwesWhom() {
+    void ac8_editWithoutACounterpartyOrCurrencyKeepsThem() {
         storedDebt(new IndividualDebt(alice, alice, bob, new BigDecimal("10.00"), "NZD", "Coffee", ENTRY_DATE));
 
         IndividualDebtResponse response = service.updateDebt(1L, ALICE, updateRequest(null));
 
         assertThat(response.payerUserId()).isEqualTo(ALICE);
         assertThat(response.debtorUserId()).isEqualTo(BOB);
-        assertThat(response.currency()).isEqualTo("NZD"); // no currency in the request keeps the old one
+        assertThat(response.currency()).isEqualTo("NZD");
+    }
+
+    @Test
+    void ac8_creatorCanCorrectWhoOwesThemAndStaysThePersonOwed() {
+        storedDebt(new IndividualDebt(alice, alice, bob, new BigDecimal("10.00"), "NZD", "Coffee", ENTRY_DATE));
+        whenLookedUpByUsername(carol);
+
+        IndividualDebtResponse response = service.updateDebt(1L, ALICE, updateRequest("carol", null));
+
+        assertThat(response.payerUserId()).isEqualTo(ALICE);
+        assertThat(response.debtorUserId()).isEqualTo(CAROL);
+    }
+
+    @Test
+    void ac9_selfDebtIsRejectedOnUpdate() {
+        storedDebt(new IndividualDebt(alice, alice, bob, new BigDecimal("10.00"), "NZD", "Coffee", ENTRY_DATE));
+        whenLookedUpByUsername(alice);
+
+        assertThatThrownBy(() -> service.updateDebt(1L, ALICE, updateRequest("alice", null)))
+                .isInstanceOf(InvalidDebtEntryException.class)
+                .hasMessage("The counterparty cannot be yourself");
+        verify(individualDebtRepository, never()).save(any());
     }
 
     @Test
@@ -304,6 +326,20 @@ class IndividualDebtServiceTest {
     }
 
     @Test
+    void ac2_entriesInBothDirectionsNetToOneFigureWithTheEntriesKeptAsTheBreakdown() {
+        entriesBetweenAliceAndBob(
+                new IndividualDebt(alice, alice, bob, new BigDecimal("50.00"), "NZD", "Concert", ENTRY_DATE),
+                new IndividualDebt(bob, bob, alice, new BigDecimal("20.00"), "NZD", "Lunch", ENTRY_DATE));
+
+        for (NetBalanceResponse balance : List.of(service.getNetBalance(ALICE, BOB), service.getNetBalance(BOB, ALICE))) {
+            assertThat(balance.fromUserId()).isEqualTo(BOB);
+            assertThat(balance.toUserId()).isEqualTo(ALICE);
+            assertThat(balance.amount()).isEqualByComparingTo("30.00");
+            assertThat(balance.entries()).hasSize(2);
+        }
+    }
+
+    @Test
     void ac10_netBalanceIsSymmetricRegardlessOfViewpoint() {
         ExpenseGroup group = sharedGroup(User.Currency.NZD, alice, bob);
         sharedBy(group, alice, bob);
@@ -358,7 +394,11 @@ class IndividualDebtServiceTest {
     }
 
     private static UpdateIndividualDebtRequest updateRequest(String currency) {
-        return new UpdateIndividualDebtRequest(new BigDecimal("15.00"), "Dinner", ENTRY_DATE, currency);
+        return updateRequest(null, currency);
+    }
+
+    private static UpdateIndividualDebtRequest updateRequest(String counterparty, String currency) {
+        return new UpdateIndividualDebtRequest(counterparty, new BigDecimal("15.00"), "Dinner", ENTRY_DATE, currency);
     }
 
     private void storedDebt(IndividualDebt debt) {

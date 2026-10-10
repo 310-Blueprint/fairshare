@@ -95,12 +95,12 @@ it('lists the current user\'s individual debts', async () => {
     expect(result.debts).toEqual([{ id: 1 }]);
 });
 
-it('puts an update with the amount, description, date and currency', async () => {
+it('puts an update with the counterparty, amount, description, date and currency', async () => {
     const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ id: 1 }) });
     vi.stubGlobal('fetch', fetchMock);
 
     await updateIndividualDebt(1, {
-        amount: '15.00', description: 'Dinner', date: '2026-10-02', currency: 'NZD',
+        counterpartyIdentifier: 'carol', amount: '15.00', description: 'Dinner', date: '2026-10-02', currency: 'NZD',
     });
 
     expect(fetchMock).toHaveBeenCalledWith(
@@ -110,7 +110,7 @@ it('puts an update with the amount, description, date and currency', async () =>
             headers: { 'Content-Type': 'application/json' },
             credentials: 'include',
             body: JSON.stringify({
-                amount: '15.00', description: 'Dinner', date: '2026-10-02', currency: 'NZD',
+                counterpartyIdentifier: 'carol', amount: '15.00', description: 'Dinner', date: '2026-10-02', currency: 'NZD',
             }),
         });
 });

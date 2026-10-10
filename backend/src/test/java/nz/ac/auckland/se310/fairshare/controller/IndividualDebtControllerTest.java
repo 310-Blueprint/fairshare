@@ -104,9 +104,10 @@ class IndividualDebtControllerTest {
         mockMvc.perform(put("/individual-debts/5")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"amount": 0, "description": " "}
+                                {"counterpartyIdentifier": " ", "amount": 0, "description": " "}
                                 """))
                 .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.counterpartyIdentifier").value("Counterparty is required"))
                 .andExpect(jsonPath("$.amount").exists())
                 .andExpect(jsonPath("$.description").value("Description is required"))
                 .andExpect(jsonPath("$.date").value("Date is required"));

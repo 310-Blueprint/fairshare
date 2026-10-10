@@ -90,14 +90,19 @@ public class IndividualDebtService {
                 .toList();
     }
 
-    // #2 AC7, AC8: only the creator can edit; amount, currency, description or date can change, but not
-    // who owes whom.
+    // #2 AC7, AC8: only the creator can edit. They can correct who owes them, the amount, currency, description
+    // or date, but always stay the person owed.
     @Transactional
     public IndividualDebtResponse updateDebt(Long entryId, Long currentUserId, UpdateIndividualDebtRequest request) {
         IndividualDebt debt = individualDebtRepository.findById(entryId)
                 .orElseThrow(IndividualDebtNotFoundException::new);
         requireCreator(debt, currentUserId);
 
+        if (request.counterpartyIdentifier() != null) {
+            User debtor = findUser(request.counterpartyIdentifier().trim());
+            requireDifferentUsers(debt.getPayer(), debtor); // AC9
+            debt.setDebtor(debtor);
+        }
         String currency = request.currency() == null
                 ? debt.getCurrency()
                 : currencyService.requireSupported(request.currency());

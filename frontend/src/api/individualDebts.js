@@ -32,13 +32,13 @@ export async function getMyIndividualDebts() {
     return { debts: await response.json() };
 }
 
-// Who owes whom is fixed once recorded, so only these fields are sent.
-export async function updateIndividualDebt(id, { amount, description, date, currency }) {
+// counterpartyIdentifier is optional: left null, the entry keeps its current debtor.
+export async function updateIndividualDebt(id, { counterpartyIdentifier, amount, description, date, currency }) {
     const debtId = requirePositiveInteger(id, 'Debt ID');
     const response = await apiFetch(`/individual-debts/${debtId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount, description, date, currency })
+        body: JSON.stringify({ counterpartyIdentifier: counterpartyIdentifier || null, amount, description, date, currency })
     });
     if (response.status === 400) {
         return readBadRequest(response);

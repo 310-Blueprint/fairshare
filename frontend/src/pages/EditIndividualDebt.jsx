@@ -1,17 +1,19 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { getMyIndividualDebts, updateIndividualDebt } from '../api/individualDebts';
-import { validateIndividualDebtDetails } from '../utils/individualDebtValidation';
+import { validateIndividualDebtEntry } from '../utils/individualDebtValidation';
 import { today } from '../utils/dates';
 import { useCurrencies } from '../utils/useCurrencies';
 import { AmountField, CurrencyField, DescriptionField, FieldError } from '../components/ExpenseFormFields';
-import { DateField } from '../components/IndividualDebtFormFields';
+import { DateField, IdentifierField } from '../components/IndividualDebtFormFields';
 
 function EditIndividualDebt() {
     const { otherUserId, entryId } = useParams();
     const navigate = useNavigate();
-    // #2 AC8: who owes whom is shown but cannot be edited, so a debtor can never become the one editing their debt.
-    const [parties, setParties] = useState(null);
+    // #2 AC8: the creator can correct who owes them, but always stays the person owed. The original
+    // username is kept so an unchanged field is not looked up again (usernames are not unique).
+    const [originalCounterparty, setOriginalCounterparty] = useState(null);
+    const [counterpartyIdentifier, setCounterpartyIdentifier] = useState('');
     const [amount, setAmount] = useState('');
     const [currency, setCurrency] = useState('');
     const [description, setDescription] = useState('');
@@ -34,7 +36,8 @@ function EditIndividualDebt() {
                     setErrors({ form: 'This entry could not be found, or you did not create it.' });
                     return;
                 }
-                setParties({ payerUsername: entry.payerUsername, debtorUsername: entry.debtorUsername });
+                setOriginalCounterparty(entry.debtorUsername);
+                setCounterpartyIdentifier(entry.debtorUsername);
                 setAmount(String(entry.amount));
                 setCurrency(entry.currency);
                 setDescription(entry.description);
@@ -51,7 +54,7 @@ function EditIndividualDebt() {
     async function handleSubmit(event) {
         event.preventDefault();
 
-        const found = validateIndividualDebtDetails({ amount, description, date });
+        const found = validateIndividualDebtEntry({ counterpartyIdentifier, amount, description, date });
         if (Object.keys(found).length > 0) {
             setErrors(found);
             return;
@@ -60,8 +63,15 @@ function EditIndividualDebt() {
         setSubmitting(true);
         setErrors({});
 
+        const counterpartyChanged = counterpartyIdentifier.trim() !== originalCounterparty;
         try {
-            const result = await updateIndividualDebt(entryId, { amount, description, date, currency });
+            const result = await updateIndividualDebt(entryId, {
+                counterpartyIdentifier: counterpartyChanged ? counterpartyIdentifier : null,
+                amount,
+                description,
+                date,
+                currency,
+            });
             if (result.errors) {
                 setErrors(result.errors);
                 return;
@@ -70,7 +80,8 @@ function EditIndividualDebt() {
                 setErrors({ form: result.error });
                 return;
             }
-            void navigate(`/debts/${otherUserId}`);
+            // A new debtor moves the entry off this balance page, so go back to the overview instead.
+            void navigate(counterpartyChanged ? '/debts' : `/debts/${otherUserId}`);
         } catch {
             setErrors({ form: 'Could not save this entry. Please try again.' });
         } finally {
@@ -80,7 +91,7 @@ function EditIndividualDebt() {
 
     if (loading) return <div className="page"><p>Loading entry...</p></div>;
 
-    if (errors.form && !parties) {
+    if (errors.form && originalCounterparty === null) {
         return (
             <div className="page">
                 <div className="card">
@@ -95,9 +106,17 @@ function EditIndividualDebt() {
         <div className="page">
             <div className="card">
                 <h1>Edit entry</h1>
-                <p>{parties.debtorUsername} owes {parties.payerUsername}</p>
 
                 <form onSubmit={handleSubmit} noValidate>
+                    <IdentifierField
+                        id="counterparty"
+                        label="Who owes you?"
+                        value={counterpartyIdentifier}
+                        onChange={setCounterpartyIdentifier}
+                        error={errors.counterpartyIdentifier}
+                        placeholder="name@example.com"
+                    />
+
                     <AmountField value={amount} onChange={setAmount} error={errors.amount} />
 
                     <CurrencyField

@@ -1,5 +1,5 @@
 // Fields for AddIndividualDebt and EditIndividualDebt, alongside the amount/currency/description
-// fields they share with the expense forms. Only the add page names a person by identifier.
+// fields they share with the expense forms.
 import { FieldError } from './ExpenseFormFields';
 
 export function IdentifierField({ id, label, value, onChange, error, placeholder }) {

@@ -33,6 +33,7 @@ function renderPage() {
             <Routes>
                 <Route path="/debts/:otherUserId/entries/:entryId/edit" element={<EditIndividualDebt />} />
                 <Route path="/debts/:otherUserId" element={<p>Balance page</p>} />
+                <Route path="/debts" element={<p>Overview page</p>} />
             </Routes>
         </MemoryRouter>
     );
@@ -63,16 +64,33 @@ describe('EditIndividualDebt', () => {
         fireEvent.click(screen.getByRole('button', { name: /save changes/i }));
 
         await waitFor(() => expect(updateIndividualDebt).toHaveBeenCalledWith('7', {
-            amount: '10', description: 'Coffee', date: '2026-10-01', currency: 'NZD',
+            counterpartyIdentifier: null, amount: '10', description: 'Coffee', date: '2026-10-01', currency: 'NZD',
         }));
         expect(await screen.findByText('Balance page')).toBeInTheDocument();
     });
 
-    it('AC8: shows who owes whom, but does not let it change', async () => {
+    it('AC8: the creator can correct who owes them, and returns to the overview', async () => {
+        updateIndividualDebt.mockResolvedValue({ debt: entry });
         renderPage();
 
-        expect(await screen.findByText('bob owes alice')).toBeInTheDocument();
-        expect(screen.queryByLabelText(/who is owed/i)).not.toBeInTheDocument();
+        const counterparty = await screen.findByLabelText(/who owes you/i);
+        expect(counterparty).toHaveValue('bob');
+        fireEvent.change(counterparty, { target: { value: 'carol@example.com' } });
+        fireEvent.click(screen.getByRole('button', { name: /save changes/i }));
+
+        await waitFor(() => expect(updateIndividualDebt).toHaveBeenCalledWith('7',
+            expect.objectContaining({ counterpartyIdentifier: 'carol@example.com' })));
+        expect(await screen.findByText('Overview page')).toBeInTheDocument();
+    });
+
+    it('AC9: requires someone to owe the debt', async () => {
+        renderPage();
+
+        fireEvent.change(await screen.findByLabelText(/who owes you/i), { target: { value: ' ' } });
+        fireEvent.click(screen.getByRole('button', { name: /save changes/i }));
+
+        expect(await screen.findByText('Counterparty is required')).toBeInTheDocument();
+        expect(updateIndividualDebt).not.toHaveBeenCalled();
     });
 
     it('AC9: validates on the client before saving', async () => {
