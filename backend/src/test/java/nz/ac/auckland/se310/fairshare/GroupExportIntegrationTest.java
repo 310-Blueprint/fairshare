@@ -13,6 +13,7 @@ import nz.ac.auckland.se310.fairshare.repository.ExpenseShareRepository;
 import nz.ac.auckland.se310.fairshare.repository.SettlementRepository;
 import nz.ac.auckland.se310.fairshare.service.ExpenseGroupService;
 import nz.ac.auckland.se310.fairshare.service.ExpenseService;
+import nz.ac.auckland.se310.fairshare.service.ExportFormat;
 import nz.ac.auckland.se310.fairshare.service.GroupExportService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -31,6 +32,7 @@ import org.testcontainers.utility.DockerImageName;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
+import java.time.Clock;
 import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
@@ -65,6 +67,7 @@ class GroupExportIntegrationTest {
     @Autowired UserRepository userRepository;
     @Autowired JdbcTemplate jdbcTemplate;
     @Autowired TestExchangeRateConfig.StubExchangeRateProvider exchangeRates;
+    @Autowired Clock clock;
 
     private Long aliceId;
     private Long bobId;
@@ -238,6 +241,42 @@ class GroupExportIntegrationTest {
     @Test
     void pdfAc6_nonMemberIsRejected() {
         assertThatThrownBy(() -> exportService.exportPdf(groupId, carolId))
+                .isInstanceOf(GroupAccessDeniedException.class);
+    }
+
+    @Test
+    void export_namesTheFileAfterTheGroupAndToday() {
+        String today = LocalDate.now(clock).toString();
+
+        assertThat(exportService.export(groupId, aliceId, ExportFormat.CSV).filename())
+                .isEqualTo("fairshare-flat-3-" + today + ".csv");
+        assertThat(exportService.export(groupId, aliceId, ExportFormat.PDF).filename())
+                .isEqualTo("fairshare-flat-3-" + today + ".pdf");
+    }
+
+    @Test
+    void export_keepsLettersInAnyScriptButNotPunctuationInTheFilename() {
+        Long cafeGroupId = groupService.createGroup(new CreateGroupRequest("  Café / Zoë's €! ", null), aliceId).id();
+        Long symbolsGroupId = groupService.createGroup(new CreateGroupRequest("€ & $", null), aliceId).id();
+        String today = LocalDate.now(clock).toString();
+
+        assertThat(exportService.export(cafeGroupId, aliceId, ExportFormat.CSV).filename())
+                .isEqualTo("fairshare-café-zoë-s-" + today + ".csv");
+        assertThat(exportService.export(symbolsGroupId, aliceId, ExportFormat.CSV).filename())
+                .isEqualTo("fairshare-group-" + today + ".csv");
+    }
+
+    @Test
+    void export_returnsTheContentForTheRequestedFormat() {
+        assertThat(exportService.export(groupId, aliceId, ExportFormat.CSV).content())
+                .isEqualTo(exportService.exportCsv(groupId, aliceId));
+        assertThat(new String(exportService.export(groupId, aliceId, ExportFormat.PDF).content(), 0, 5,
+                StandardCharsets.US_ASCII)).isEqualTo("%PDF-");
+    }
+
+    @Test
+    void exportAc6_nonMemberIsRejected() {
+        assertThatThrownBy(() -> exportService.export(groupId, carolId, ExportFormat.CSV))
                 .isInstanceOf(GroupAccessDeniedException.class);
     }
 
