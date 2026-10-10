@@ -92,7 +92,11 @@ function IndividualDebtBalance() {
 
                 <h3>Breakdown</h3>
                 {balance.entries.length === 0 ? (
-                    <p className="empty">No individual entries between you - this figure is from shared groups only.</p>
+                    <p className="empty">
+                        No individual entries between you.
+                        {/* Only an unsettled balance with no entries can have come from shared groups */}
+                        {!balance.settled && ' This figure is from shared groups only.'}
+                    </p>
                 ) : (
                     <ul className="debt-list">
                         {balance.entries.map((entry) => (
@@ -100,12 +104,17 @@ function IndividualDebtBalance() {
                                 <span>{entryLine(entry)}</span>
                                 <span> - {entry.description} ({entry.date})</span>
                                 {entry.canEdit && (
-                                    <span>
+                                    <>
                                         {' '}
                                         <Link to={`/debts/${otherUserId}/entries/${entry.id}/edit`}>Edit</Link>
+                                    </>
+                                )}
+                                {/* #2 AC7: only the person who is owed can write a debt off */}
+                                {entry.payerUserId !== Number(otherUserId) && (
+                                    <>
                                         {' '}
                                         <button type="button" onClick={() => setEntryToDelete(entry)}>Delete</button>
-                                    </span>
+                                    </>
                                 )}
                             </li>
                         ))}

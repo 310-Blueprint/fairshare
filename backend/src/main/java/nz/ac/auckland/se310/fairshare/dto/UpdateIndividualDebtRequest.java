@@ -11,15 +11,9 @@ import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
-// #2 AC8: the creator may swap which side of the entry each person is on, not just amount/description/date.
-// Users are named by ID rather than username, since usernames are not unique.
+// #2 AC8: the creator may change the amount, currency, description and date. Who owes whom is fixed
+// once recorded - the creator is always the person owed, so a debtor can never edit their own debt.
 public record UpdateIndividualDebtRequest(
-        @NotNull(message = "Payer is required")
-        Long payerUserId,
-
-        @NotNull(message = "Debtor is required")
-        Long debtorUserId,
-
         @NotNull(message = "Amount is required")
         @Positive(message = "Amount must be a positive number")
         @DecimalMin(value = "0.01", message = "Amount must be at least 0.01")

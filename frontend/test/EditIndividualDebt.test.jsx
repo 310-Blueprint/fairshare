@@ -50,34 +50,29 @@ describe('EditIndividualDebt', () => {
     it('AC8: fills the form from the entry', async () => {
         renderPage();
 
-        expect(await screen.findByLabelText(/who is owed/i)).toHaveValue('1');
-        expect(screen.getByLabelText(/amount/i)).toHaveValue(10);
+        expect(await screen.findByLabelText(/amount/i)).toHaveValue(10);
         expect(screen.getByLabelText(/description/i)).toHaveValue('Coffee');
         await waitFor(() => expect(screen.getByLabelText(/currency/i)).toHaveValue('NZD'));
     });
 
-    it('#2: saves by user id, so duplicate usernames cannot break an edit', async () => {
+    it('AC8: saves the edited fields and returns to the balance', async () => {
         updateIndividualDebt.mockResolvedValue({ debt: entry });
         renderPage();
 
-        await screen.findByLabelText(/who is owed/i);
+        await screen.findByLabelText(/amount/i);
         fireEvent.click(screen.getByRole('button', { name: /save changes/i }));
 
         await waitFor(() => expect(updateIndividualDebt).toHaveBeenCalledWith('7', {
-            payerUserId: 1, debtorUserId: 2, amount: '10', description: 'Coffee', date: '2026-10-01', currency: 'NZD',
+            amount: '10', description: 'Coffee', date: '2026-10-01', currency: 'NZD',
         }));
         expect(await screen.findByText('Balance page')).toBeInTheDocument();
     });
 
-    it('AC8: swapping who is owed swaps the debtor too', async () => {
-        updateIndividualDebt.mockResolvedValue({ debt: entry });
+    it('AC8: shows who owes whom, but does not let it change', async () => {
         renderPage();
 
-        fireEvent.change(await screen.findByLabelText(/who is owed/i), { target: { value: '2' } });
-        fireEvent.click(screen.getByRole('button', { name: /save changes/i }));
-
-        await waitFor(() => expect(updateIndividualDebt).toHaveBeenCalledWith('7',
-            expect.objectContaining({ payerUserId: 2, debtorUserId: 1 })));
+        expect(await screen.findByText('bob owes alice')).toBeInTheDocument();
+        expect(screen.queryByLabelText(/who is owed/i)).not.toBeInTheDocument();
     });
 
     it('AC9: validates on the client before saving', async () => {
@@ -93,13 +88,13 @@ describe('EditIndividualDebt', () => {
     });
 
     it('shows a form-level error from the server', async () => {
-        updateIndividualDebt.mockResolvedValue({ error: 'You must be either the payer or the debtor of this entry' });
+        updateIndividualDebt.mockResolvedValue({ error: 'Only the creator of this entry can edit it' });
         renderPage();
 
-        await screen.findByLabelText(/who is owed/i);
+        await screen.findByLabelText(/amount/i);
         fireEvent.click(screen.getByRole('button', { name: /save changes/i }));
 
-        expect(await screen.findByText('You must be either the payer or the debtor of this entry')).toBeInTheDocument();
+        expect(await screen.findByText('Only the creator of this entry can edit it')).toBeInTheDocument();
     });
 
     it('AC7: refuses to edit an entry the user did not create', async () => {

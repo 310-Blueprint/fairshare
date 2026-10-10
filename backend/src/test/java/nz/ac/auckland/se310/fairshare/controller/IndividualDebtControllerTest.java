@@ -42,8 +42,7 @@ class IndividualDebtControllerTest {
     private static final long ALICE = 10L;
     private static final long BOB = 20L;
     private static final String VALID_UPDATE = """
-            {"payerUserId": 10, "debtorUserId": 20, "amount": 15.00, "description": "Dinner",
-             "date": "2026-08-01", "currency": "NZD"}
+            {"amount": 15.00, "description": "Dinner", "date": "2026-08-01", "currency": "NZD"}
             """;
 
     private final IndividualDebtService service = mock(IndividualDebtService.class);
@@ -101,15 +100,16 @@ class IndividualDebtControllerTest {
     }
 
     @Test
-    void updateRequiresBothUserIds() throws Exception {
+    void updateValidatesTheEditableFields() throws Exception {
         mockMvc.perform(put("/individual-debts/5")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"amount": 15.00, "description": "Dinner", "date": "2026-08-01"}
+                                {"amount": 0, "description": " "}
                                 """))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.payerUserId").value("Payer is required"))
-                .andExpect(jsonPath("$.debtorUserId").value("Debtor is required"));
+                .andExpect(jsonPath("$.amount").exists())
+                .andExpect(jsonPath("$.description").value("Description is required"))
+                .andExpect(jsonPath("$.date").value("Date is required"));
     }
 
     @Test
@@ -132,12 +132,12 @@ class IndividualDebtControllerTest {
     }
 
     @Test
-    void ac7_deletingSomeoneElsesEntryIsA403() throws Exception {
-        doThrow(new IndividualDebtAccessDeniedException()).when(service).deleteDebt(5L, ALICE);
+    void ac7_deletingAnEntryYouAreNotOwedOnIsA403() throws Exception {
+        doThrow(IndividualDebtAccessDeniedException.forDelete()).when(service).deleteDebt(5L, ALICE);
 
         mockMvc.perform(delete("/individual-debts/5"))
                 .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.error").exists());
+                .andExpect(jsonPath("$.error").value("Only the person who is owed can delete this entry"));
     }
 
     @Test

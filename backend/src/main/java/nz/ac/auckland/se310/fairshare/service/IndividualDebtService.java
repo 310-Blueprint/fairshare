@@ -90,24 +90,18 @@ public class IndividualDebtService {
                 .toList();
     }
 
-    // #2 AC7, AC8: only the creator can edit; payer, debtor, amount, currency, description or date can change,
-    // as long as the creator stays on one side of the entry.
+    // #2 AC7, AC8: only the creator can edit; amount, currency, description or date can change, but not
+    // who owes whom.
     @Transactional
     public IndividualDebtResponse updateDebt(Long entryId, Long currentUserId, UpdateIndividualDebtRequest request) {
         IndividualDebt debt = individualDebtRepository.findById(entryId)
                 .orElseThrow(IndividualDebtNotFoundException::new);
         requireCreator(debt, currentUserId);
 
-        User payer = findUserById(request.payerUserId());
-        User debtor = findUserById(request.debtorUserId());
-        requireDifferentUsers(payer, debtor); // AC9
-        requireCreatorIsParty(payer, debtor, currentUserId);
         String currency = request.currency() == null
                 ? debt.getCurrency()
                 : currencyService.requireSupported(request.currency());
 
-        debt.setPayer(payer);
-        debt.setDebtor(debtor);
         debt.setAmount(request.amount().setScale(MONEY_SCALE, RoundingMode.HALF_UP));
         debt.setCurrency(currency);
         debt.setDescription(request.description().trim());
@@ -116,12 +110,15 @@ public class IndividualDebtService {
         return toResponse(individualDebtRepository.save(debt), currentUserId);
     }
 
-    // #2 AC7
+    // #2 AC7: deleting writes the debt off, so only the person who is owed can do it - otherwise the
+    // debtor could clear a debt they never paid. Unlike editing, it does not matter who created the entry.
     @Transactional
     public void deleteDebt(Long entryId, Long currentUserId) {
         IndividualDebt debt = individualDebtRepository.findById(entryId)
                 .orElseThrow(IndividualDebtNotFoundException::new);
-        requireCreator(debt, currentUserId);
+        if (!debt.getPayer().getId().equals(currentUserId)) {
+            throw IndividualDebtAccessDeniedException.forDelete();
+        }
         individualDebtRepository.delete(debt);
     }
 
@@ -270,14 +267,6 @@ public class IndividualDebtService {
         }
     }
 
-    // #2 AC7: otherwise the creator could move an entry between two other people, and then lose
-    // sight of it - it would leave their own list while they are still the only one who can edit it.
-    private void requireCreatorIsParty(User payer, User debtor, Long creatorId) {
-        if (!payer.getId().equals(creatorId) && !debtor.getId().equals(creatorId)) {
-            throw new InvalidDebtEntryException("You must be either the payer or the debtor of this entry");
-        }
-    }
-
     private void requireDifferentUsers(User a, User b) {
         if (a.getId().equals(b.getId())) {
             throw new InvalidDebtEntryException("The counterparty cannot be yourself"); // AC9
@@ -286,11 +275,6 @@ public class IndividualDebtService {
 
     private static String homeCurrency(User user) {
         return (user.getCurrency() == null ? FALLBACK_CURRENCY : user.getCurrency()).name();
-    }
-
-    private User findUserById(Long userId) {
-        return userRepository.findById(userId)
-                .orElseThrow(() -> new UserNotFoundException("No matching user was found"));
     }
 
     private User findUser(String identifier) {

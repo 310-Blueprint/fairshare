@@ -50,7 +50,7 @@ describe('IndividualDebtBalance', () => {
         expect(screen.getByText('bob is owed NZD 4.00 by alice')).toBeInTheDocument();
     });
 
-    it('AC7: only shows Edit and Delete on entries the user created', async () => {
+    it('AC7: only shows Edit on entries the user created, and Delete on entries where they are owed', async () => {
         renderPage();
 
         const mineRow = (await screen.findByText(/USD 10.00/)).closest('li');
@@ -60,6 +60,21 @@ describe('IndividualDebtBalance', () => {
         expect(within(mineRow).getByRole('button', { name: 'Delete' })).toBeInTheDocument();
         expect(within(theirsRow).queryByRole('link', { name: 'Edit' })).not.toBeInTheDocument();
         expect(within(theirsRow).queryByRole('button', { name: 'Delete' })).not.toBeInTheDocument();
+    });
+
+    it('AC7: the creator cannot delete an entry where they owe, and the person owed can delete one they did not create', async () => {
+        const iOweAndCreated = { ...theirs, id: 9, canEdit: true };
+        const owedToMeByTheirEntry = { ...mine, id: 10, canEdit: false };
+        getBalanceWithUser.mockResolvedValue({ balance: balance([iOweAndCreated, owedToMeByTheirEntry]) });
+        renderPage();
+
+        const iOweRow = (await screen.findByText(/NZD 4.00/)).closest('li');
+        const owedToMeRow = screen.getByText(/USD 10.00/).closest('li');
+
+        expect(within(iOweRow).getByRole('link', { name: 'Edit' })).toBeInTheDocument();
+        expect(within(iOweRow).queryByRole('button', { name: 'Delete' })).not.toBeInTheDocument();
+        expect(within(owedToMeRow).queryByRole('link', { name: 'Edit' })).not.toBeInTheDocument();
+        expect(within(owedToMeRow).getByRole('button', { name: 'Delete' })).toBeInTheDocument();
     });
 
     it('asks for confirmation before deleting, and does nothing on cancel', async () => {
@@ -108,6 +123,14 @@ describe('IndividualDebtBalance', () => {
         renderPage();
 
         expect(await screen.findByText('You and bob are settled up')).toBeInTheDocument();
-        expect(screen.getByText(/this figure is from shared groups only/)).toBeInTheDocument();
+        expect(screen.getByText(/No individual entries between you/)).toBeInTheDocument();
+        expect(screen.queryByText(/from shared groups only/)).not.toBeInTheDocument();
+    });
+
+    it('says the figure is from shared groups when there are no entries but a balance remains', async () => {
+        getBalanceWithUser.mockResolvedValue({ balance: balance([]) });
+        renderPage();
+
+        expect(await screen.findByText(/This figure is from shared groups only/)).toBeInTheDocument();
     });
 });

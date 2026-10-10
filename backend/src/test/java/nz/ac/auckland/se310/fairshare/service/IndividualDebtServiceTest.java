@@ -55,7 +55,6 @@ class IndividualDebtServiceTest {
     private static final long ALICE = 10L;
     private static final long BOB = 20L;
     private static final long CAROL = 30L;
-    private static final long DAVE = 40L;
     private static final long GROUP_ID = 1L;
     private static final LocalDate ENTRY_DATE = LocalDate.of(2026, 8, 1);
 
@@ -159,21 +158,40 @@ class IndividualDebtServiceTest {
     }
 
     @Test
-    void ac7_onlyCreatorCanEditOrDelete() {
+    void ac7_onlyCreatorCanEdit() {
         storedDebt(new IndividualDebt(alice, alice, bob, new BigDecimal("10.00"), "NZD", "Coffee", ENTRY_DATE));
 
-        assertThatThrownBy(() -> service.updateDebt(1L, BOB, updateRequest(ALICE, BOB, null)))
+        assertThatThrownBy(() -> service.updateDebt(1L, BOB, updateRequest(null)))
                 .isInstanceOf(IndividualDebtAccessDeniedException.class);
+        verify(individualDebtRepository, never()).save(any());
+    }
+
+    @Test
+    void ac7_theDebtorCannotDeleteAnEntryEvenIfTheyCreatedIt() {
+        // Bob recorded that he owes Alice; only Alice can write that off.
+        storedDebt(new IndividualDebt(bob, alice, bob, new BigDecimal("10.00"), "NZD", "Coffee", ENTRY_DATE));
+
         assertThatThrownBy(() -> service.deleteDebt(1L, BOB))
-                .isInstanceOf(IndividualDebtAccessDeniedException.class);
+                .isInstanceOf(IndividualDebtAccessDeniedException.class)
+                .hasMessage("Only the person who is owed can delete this entry");
         verify(individualDebtRepository, never()).delete(any());
+    }
+
+    @Test
+    void ac7_thePersonOwedCanDeleteAnEntrySomeoneElseCreated() {
+        IndividualDebt debt = new IndividualDebt(bob, alice, bob, new BigDecimal("10.00"), "NZD", "Coffee", ENTRY_DATE);
+        storedDebt(debt);
+
+        service.deleteDebt(1L, ALICE);
+
+        verify(individualDebtRepository).delete(debt);
     }
 
     @Test
     void ac8_creatorEditRecalculatesTheEntry() {
         storedDebt(new IndividualDebt(alice, alice, bob, new BigDecimal("10.00"), "NZD", "Coffee", ENTRY_DATE));
 
-        IndividualDebtResponse response = service.updateDebt(1L, ALICE, updateRequest(ALICE, BOB, "AUD"));
+        IndividualDebtResponse response = service.updateDebt(1L, ALICE, updateRequest("AUD"));
 
         assertThat(response.amount()).isEqualByComparingTo("15.00");
         assertThat(response.currency()).isEqualTo("AUD");
@@ -181,34 +199,14 @@ class IndividualDebtServiceTest {
     }
 
     @Test
-    void ac8_creatorCanSwapWhoOwesWhom() {
+    void ac8_editingNeverChangesWhoOwesWhom() {
         storedDebt(new IndividualDebt(alice, alice, bob, new BigDecimal("10.00"), "NZD", "Coffee", ENTRY_DATE));
 
-        IndividualDebtResponse response = service.updateDebt(1L, ALICE, updateRequest(BOB, ALICE, null));
+        IndividualDebtResponse response = service.updateDebt(1L, ALICE, updateRequest(null));
 
-        assertThat(response.payerUserId()).isEqualTo(BOB);
-        assertThat(response.debtorUserId()).isEqualTo(ALICE);
+        assertThat(response.payerUserId()).isEqualTo(ALICE);
+        assertThat(response.debtorUserId()).isEqualTo(BOB);
         assertThat(response.currency()).isEqualTo("NZD"); // no currency in the request keeps the old one
-    }
-
-    @Test
-    void ac7_creatorCannotMoveAnEntryToTwoOtherPeople() {
-        User dave = user(DAVE, "dave", User.Currency.NZD);
-        storedDebt(new IndividualDebt(alice, alice, bob, new BigDecimal("10.00"), "NZD", "Coffee", ENTRY_DATE));
-
-        assertThatThrownBy(() -> service.updateDebt(1L, ALICE, updateRequest(dave.getId(), BOB, null)))
-                .isInstanceOf(InvalidDebtEntryException.class)
-                .hasMessage("You must be either the payer or the debtor of this entry");
-        verify(individualDebtRepository, never()).save(any());
-    }
-
-    @Test
-    void ac9_selfDebtIsRejectedOnUpdate() {
-        storedDebt(new IndividualDebt(alice, alice, bob, new BigDecimal("10.00"), "NZD", "Coffee", ENTRY_DATE));
-
-        assertThatThrownBy(() -> service.updateDebt(1L, ALICE, updateRequest(ALICE, ALICE, null)))
-                .isInstanceOf(InvalidDebtEntryException.class);
-        verify(individualDebtRepository, never()).save(any());
     }
 
     @Test
@@ -359,8 +357,8 @@ class IndividualDebtServiceTest {
         return new CreateIndividualDebtRequest(counterparty, new BigDecimal("25.00"), "Lunch", ENTRY_DATE, currency);
     }
 
-    private static UpdateIndividualDebtRequest updateRequest(Long payerId, Long debtorId, String currency) {
-        return new UpdateIndividualDebtRequest(payerId, debtorId, new BigDecimal("15.00"), "Dinner", ENTRY_DATE, currency);
+    private static UpdateIndividualDebtRequest updateRequest(String currency) {
+        return new UpdateIndividualDebtRequest(new BigDecimal("15.00"), "Dinner", ENTRY_DATE, currency);
     }
 
     private void storedDebt(IndividualDebt debt) {

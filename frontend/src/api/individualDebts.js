@@ -32,13 +32,13 @@ export async function getMyIndividualDebts() {
     return { debts: await response.json() };
 }
 
-// Users are sent by ID, since usernames are not unique.
-export async function updateIndividualDebt(id, { payerUserId, debtorUserId, amount, description, date, currency }) {
+// Who owes whom is fixed once recorded, so only these fields are sent.
+export async function updateIndividualDebt(id, { amount, description, date, currency }) {
     const debtId = requirePositiveInteger(id, 'Debt ID');
     const response = await apiFetch(`/individual-debts/${debtId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ payerUserId, debtorUserId, amount, description, date, currency })
+        body: JSON.stringify({ amount, description, date, currency })
     });
     if (response.status === 400) {
         return readBadRequest(response);

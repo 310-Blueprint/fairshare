@@ -70,7 +70,7 @@ it.each([
         counterpartyIdentifier: 'alice', amount: '5', description: 'x', date: '2026-10-01',
     })],
     ['update', () => updateIndividualDebt(1, {
-        payerUserId: 1, debtorUserId: 1, amount: '5', description: 'x', date: '2026-10-01', currency: 'NZD',
+        amount: '5', description: 'x', date: '2026-10-01', currency: 'NZD',
     })],
 ])('returns a form-level 400 { error } as an error, not field errors, on %s', async (_, send) => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
@@ -95,12 +95,12 @@ it('lists the current user\'s individual debts', async () => {
     expect(result.debts).toEqual([{ id: 1 }]);
 });
 
-it('puts an update with both user ids, amount, description, date and currency', async () => {
+it('puts an update with the amount, description, date and currency', async () => {
     const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ id: 1 }) });
     vi.stubGlobal('fetch', fetchMock);
 
     await updateIndividualDebt(1, {
-        payerUserId: 1, debtorUserId: 2, amount: '15.00', description: 'Dinner', date: '2026-10-02', currency: 'NZD',
+        amount: '15.00', description: 'Dinner', date: '2026-10-02', currency: 'NZD',
     });
 
     expect(fetchMock).toHaveBeenCalledWith(
@@ -110,7 +110,7 @@ it('puts an update with both user ids, amount, description, date and currency', 
             headers: { 'Content-Type': 'application/json' },
             credentials: 'include',
             body: JSON.stringify({
-                payerUserId: 1, debtorUserId: 2, amount: '15.00', description: 'Dinner', date: '2026-10-02', currency: 'NZD',
+                amount: '15.00', description: 'Dinner', date: '2026-10-02', currency: 'NZD',
             }),
         });
 });

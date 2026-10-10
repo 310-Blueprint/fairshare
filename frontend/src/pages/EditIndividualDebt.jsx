@@ -10,10 +10,8 @@ import { DateField } from '../components/IndividualDebtFormFields';
 function EditIndividualDebt() {
     const { otherUserId, entryId } = useParams();
     const navigate = useNavigate();
-    // The two people on the entry, as { userId, username }. The creator must stay one of them,
-    // so editing can swap who owes whom but not move the entry to someone else.
-    const [people, setPeople] = useState([]);
-    const [payerUserId, setPayerUserId] = useState('');
+    // #2 AC8: who owes whom is shown but cannot be edited, so a debtor can never become the one editing their debt.
+    const [parties, setParties] = useState(null);
     const [amount, setAmount] = useState('');
     const [currency, setCurrency] = useState('');
     const [description, setDescription] = useState('');
@@ -36,11 +34,7 @@ function EditIndividualDebt() {
                     setErrors({ form: 'This entry could not be found, or you did not create it.' });
                     return;
                 }
-                setPeople([
-                    { userId: String(entry.payerUserId), username: entry.payerUsername },
-                    { userId: String(entry.debtorUserId), username: entry.debtorUsername },
-                ]);
-                setPayerUserId(String(entry.payerUserId));
+                setParties({ payerUsername: entry.payerUsername, debtorUsername: entry.debtorUsername });
                 setAmount(String(entry.amount));
                 setCurrency(entry.currency);
                 setDescription(entry.description);
@@ -66,16 +60,8 @@ function EditIndividualDebt() {
         setSubmitting(true);
         setErrors({});
 
-        const debtorUserId = people.find((person) => person.userId !== payerUserId).userId;
         try {
-            const result = await updateIndividualDebt(entryId, {
-                payerUserId: Number(payerUserId),
-                debtorUserId: Number(debtorUserId),
-                amount,
-                description,
-                date,
-                currency,
-            });
+            const result = await updateIndividualDebt(entryId, { amount, description, date, currency });
             if (result.errors) {
                 setErrors(result.errors);
                 return;
@@ -94,7 +80,7 @@ function EditIndividualDebt() {
 
     if (loading) return <div className="page"><p>Loading entry...</p></div>;
 
-    if (errors.form && people.length === 0) {
+    if (errors.form && !parties) {
         return (
             <div className="page">
                 <div className="card">
@@ -109,18 +95,9 @@ function EditIndividualDebt() {
         <div className="page">
             <div className="card">
                 <h1>Edit entry</h1>
+                <p>{parties.debtorUsername} owes {parties.payerUsername}</p>
 
                 <form onSubmit={handleSubmit} noValidate>
-                    <div className="form-group">
-                        <label htmlFor="payer">Who is owed?</label>
-                        <select id="payer" value={payerUserId} onChange={(event) => setPayerUserId(event.target.value)}>
-                            {people.map((person) => (
-                                <option key={person.userId} value={person.userId}>{person.username}</option>
-                            ))}
-                        </select>
-                        <FieldError message={errors.payerUserId || errors.debtorUserId} />
-                    </div>
-
                     <AmountField value={amount} onChange={setAmount} error={errors.amount} />
 
                     <CurrencyField
