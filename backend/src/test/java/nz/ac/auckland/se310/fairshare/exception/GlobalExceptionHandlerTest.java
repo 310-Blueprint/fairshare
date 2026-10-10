@@ -32,4 +32,14 @@ class GlobalExceptionHandlerTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
         assertThat(response.getBody()).containsEntry("currency", "Unsupported currency code: XYZ");
     }
+
+    // #12: an invalid export format is a 400 on the format field.
+    @Test
+    void invalidExportFormatIsA400OnTheFormatField() {
+        ResponseEntity<Map<String, String>> response = handler.handleInvalidExportFormat(
+                new InvalidExportFormatException("xlsx"));
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(response.getBody()).containsEntry("format", "Unsupported export format: xlsx. Use csv or pdf");
+    }
 }
