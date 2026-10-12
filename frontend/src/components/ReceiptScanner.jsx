@@ -43,7 +43,6 @@ function ReceiptScanner({ groupId, onApply }) {
             }
 
             setReceipt({
-                items: result.receipt.items.map((item) => ({
                 items: result.receipt.items.map((item, index) => ({
                     id: index,
                     description: item.description,
