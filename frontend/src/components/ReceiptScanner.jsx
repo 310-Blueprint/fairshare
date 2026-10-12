@@ -44,7 +44,8 @@ function ReceiptScanner({ groupId, onApply }) {
 
             setReceipt({
                 items: result.receipt.items.map((item) => ({
-                    id: crypto.randomUUID(),
+                items: result.receipt.items.map((item, index) => ({
+                    id: index,
                     description: item.description,
                     price: asMoney(item.price),
                 })),
