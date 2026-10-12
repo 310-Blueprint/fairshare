@@ -12,6 +12,16 @@ public class ExchangeRateUnavailableException extends RuntimeException {
                 + "expense was not saved. Try again later, or enter the expense in " + to + ".", cause);
     }
 
+    private ExchangeRateUnavailableException(String message, Throwable cause) {
+        super(message, cause);
+    }
+
+    /** #2: nothing is being saved when an individual debt balance is converted for display. */
+    public static ExchangeRateUnavailableException forBalance(String from, String to, Throwable cause) {
+        return new ExchangeRateUnavailableException("The exchange rate from " + from + " to " + to
+                + " is unavailable right now, so this balance cannot be shown. Try again later.", cause);
+    }
+
     public ExchangeRateUnavailableException(String from, String to) {
         this(from, to, null);
     }

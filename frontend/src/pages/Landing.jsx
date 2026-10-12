@@ -23,6 +23,7 @@ function Landing() {
                         <>
                             <Link to="/groups/new" className="button landingLink">Create Group</Link>
                             <Link to="/groups" className="button landingLink">My Groups</Link>
+                            <Link to="/debts" className="button landingLink">Individual Debts</Link>
                             <Link to="/profile" className="button">My Profile</Link>
                         </>
                     ) : (

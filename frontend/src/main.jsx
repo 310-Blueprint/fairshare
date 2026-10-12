@@ -17,6 +17,10 @@ import './index.css';
 import App from './App.jsx';
 import {getCurrentUser} from "./api/users.js";
 import EditExpense from './pages/ManageExpense.jsx';
+import IndividualDebts from './pages/IndividualDebts.jsx';
+import AddIndividualDebt from './pages/AddIndividualDebt.jsx';
+import IndividualDebtBalance from './pages/IndividualDebtBalance.jsx';
+import EditIndividualDebt from './pages/EditIndividualDebt.jsx';
 
 /** Sends visitors without a session to the login page before the route renders. */
 async function requireAuth() {
@@ -92,6 +96,26 @@ const router = createBrowserRouter([
             {
                 path: '/groups/:id/expenses/:expenseId/edit',
                 element: <EditExpense/>,
+                loader: requireAuth
+            },
+            {
+                path: '/debts',
+                element: <IndividualDebts/>,
+                loader: requireAuth
+            },
+            {
+                path: '/debts/new',
+                element: <AddIndividualDebt/>,
+                loader: requireAuth
+            },
+            {
+                path: '/debts/:otherUserId',
+                element: <IndividualDebtBalance/>,
+                loader: requireAuth
+            },
+            {
+                path: '/debts/:otherUserId/entries/:entryId/edit',
+                element: <EditIndividualDebt/>,
                 loader: requireAuth
             }
         ]
