@@ -53,7 +53,9 @@ class GroupExportIntegrationTest {
 
     private static final String CAROL_EMAIL = "carol@test.com";
     private static final String CSV_HEADER =
-            "Date,Description,Amount,Currency,Original Amount,Original Currency,Paid By,Split\r\n";
+            "\uFEFFDate,Description,Amount,Currency,Original Amount,Original Currency,Paid By,Split\r\n";
+    private static final String CSV_MEMBER_HEADER =
+            "\r\nMember balances (NZD)\r\nMember,Total Paid,Total Share,Net Balance\r\n";
     private static final LocalDate SEPT_1 = LocalDate.of(2026, 9, 1);
     private static final LocalDate SEPT_5 = LocalDate.of(2026, 9, 5);
 
@@ -107,36 +109,42 @@ class GroupExportIntegrationTest {
         expenseService.createExpense(groupId, new CreateExpenseRequest(
                 new BigDecimal("30.00"), "Groceries", aliceId, List.of(aliceId, bobId, carolId), SEPT_1), aliceId);
 
-        String csv = csvText(exportService.exportCsv(groupId, aliceId));
-
-        assertThat(csv).isEqualTo("﻿" + CSV_HEADER
+        assertThat(csv(groupId, aliceId)).isEqualTo(CSV_HEADER
                 + "2026-09-01,Groceries,30.00,NZD,30.00,NZD,alice,alice: 10.00; bob: 10.00; carol: 10.00\r\n"
                 // USD 20.00 at 1.7056 is NZD 34.11; the odd cent goes to the lowest user id.
-                + "2026-09-05,Dinner,34.11,NZD,20.00,USD,bob,alice: 17.06; bob: 17.05\r\n");
+                + "2026-09-05,Dinner,34.11,NZD,20.00,USD,bob,alice: 17.06; bob: 17.05\r\n"
+                + CSV_MEMBER_HEADER
+                // Member, total paid, total share, net balance (positive owes, negative is owed).
+                + "alice,30.00,27.06,-2.94\r\n"
+                + "bob,34.11,27.05,-7.06\r\n"
+                + "carol,0.00,10.00,10.00\r\n");
     }
 
     @Test
     void csvAc3_reflectsAnExpenseEditedAfterAnEarlierExport() {
         ExpenseResponse expense = expenseService.createExpense(groupId, new CreateExpenseRequest(
                 new BigDecimal("10.00"), "Taxi", aliceId, List.of(aliceId, bobId), SEPT_1), aliceId);
-        assertThat(csvText(exportService.exportCsv(groupId, aliceId))).contains("Taxi,10.00");
+        assertThat(csv(groupId, aliceId)).contains("Taxi,10.00");
 
         expenseService.updateExpense(groupId, new CreateExpenseRequest(
                 new BigDecimal("24.00"), "Airport taxi", bobId, List.of(aliceId, bobId), SEPT_1), aliceId, expense.id());
 
-        assertThat(csvText(exportService.exportCsv(groupId, aliceId)))
+        assertThat(csv(groupId, aliceId))
                 .doesNotContain("Taxi,10.00")
                 .contains("2026-09-01,Airport taxi,24.00,NZD,24.00,NZD,bob,alice: 12.00; bob: 12.00\r\n");
     }
 
     @Test
-    void csvAc4_groupWithNoExpensesIsJustTheHeader() {
-        assertThat(csvText(exportService.exportCsv(groupId, aliceId))).isEqualTo("﻿" + CSV_HEADER);
+    void csvAc4_groupWithNoExpensesListsEveryMemberAtZero() {
+        assertThat(csv(groupId, aliceId)).isEqualTo(CSV_HEADER
+                + CSV_MEMBER_HEADER
+                + "alice,0.00,0.00,0.00\r\n"
+                + "bob,0.00,0.00,0.00\r\n");
     }
 
     @Test
     void csvAc5_startsWithAUtf8ByteOrderMark() {
-        byte[] csv = exportService.exportCsv(groupId, aliceId);
+        byte[] csv = exportService.export(groupId, aliceId, ExportFormat.CSV).content();
 
         assertThat(Arrays.copyOf(csv, 3)).containsExactly(0xEF, 0xBB, 0xBF);
     }
@@ -149,23 +157,34 @@ class GroupExportIntegrationTest {
         expenseService.createExpense(groupId, new CreateExpenseRequest(
                 new BigDecimal("6.00"), "=1+2", aliceId, List.of(aliceId, bobId), SEPT_5), aliceId);
 
-        String csv = csvText(exportService.exportCsv(groupId, aliceId));
-
-        assertThat(csv).isEqualTo("﻿" + CSV_HEADER
+        assertThat(csv(groupId, aliceId)).isEqualTo(CSV_HEADER
                 + "2026-09-01,\"Dinner, \"\"Chez Zoë\"\"\n€24 set menu\",48.00,NZD,48.00,NZD,alice,alice: 24.00; bob: 24.00\r\n"
-                + "2026-09-05,'=1+2,6.00,NZD,6.00,NZD,alice,alice: 3.00; bob: 3.00\r\n");
+                + "2026-09-05,'=1+2,6.00,NZD,6.00,NZD,alice,alice: 3.00; bob: 3.00\r\n"
+                + CSV_MEMBER_HEADER
+                // A negative balance is a plain number, so the formula guard leaves it alone.
+                + "alice,54.00,27.00,-27.00\r\n"
+                + "bob,0.00,27.00,27.00\r\n");
     }
 
     @Test
     void csvAc6_nonMemberIsRejected() {
-        assertThatThrownBy(() -> exportService.exportCsv(groupId, carolId))
+        assertThatThrownBy(() -> csv(groupId, carolId))
                 .isInstanceOf(GroupAccessDeniedException.class);
     }
 
     @Test
     void csvAc6_unknownGroupIsRejectedTheSameWay() {
-        assertThatThrownBy(() -> exportService.exportCsv(groupId + 1000, aliceId))
+        assertThatThrownBy(() -> csv(groupId + 1000, aliceId))
                 .isInstanceOf(GroupAccessDeniedException.class);
+    }
+
+    @Test
+    void csv_listsAFormerMemberSoThePaidAndShareColumnsAddUp() {
+        recordSettledTaxisAndRemoveBob();
+
+        assertThat(csv(groupId, aliceId)).endsWith(CSV_MEMBER_HEADER
+                + "alice,10.00,10.00,0.00\r\n"
+                + "bob (former member),10.00,10.00,\r\n");
     }
 
     @Test
@@ -173,7 +192,7 @@ class GroupExportIntegrationTest {
         groupService.addMember(groupId, CAROL_EMAIL, aliceId);
         recordGroceriesAndDinner();
 
-        byte[] pdf = exportService.exportPdf(groupId, aliceId);
+        byte[] pdf = exportService.export(groupId, aliceId, ExportFormat.PDF).content();
         String text = pdfText(pdf);
 
         assertThat(new String(pdf, 0, 5, StandardCharsets.US_ASCII)).isEqualTo("%PDF-");
@@ -195,7 +214,7 @@ class GroupExportIntegrationTest {
         groupService.computeSettlement(groupId, carolId, new SettlementRequest(List.of()));
         groupService.markSettlementPaid(groupId, carolId, bobId, carolId);
 
-        String text = pdfText(exportService.exportPdf(groupId, aliceId));
+        String text = pdfText(pdf(groupId, aliceId));
 
         // Carol's 7.06 to Bob clears his balance, though his paid and share totals are unchanged.
         assertThat(groupService.getBalances(groupId, aliceId))
@@ -209,23 +228,39 @@ class GroupExportIntegrationTest {
 
     @Test
     void pdfAc3_reflectsAnExpenseAddedAfterAnEarlierExport() throws IOException {
-        assertThat(pdfText(exportService.exportPdf(groupId, aliceId))).contains("No expenses recorded.");
+        assertThat(pdfText(pdf(groupId, aliceId))).contains("No expenses recorded.");
 
         expenseService.createExpense(groupId, new CreateExpenseRequest(
                 new BigDecimal("10.00"), "Taxi", aliceId, List.of(aliceId, bobId), SEPT_1), aliceId);
 
-        assertThat(pdfText(exportService.exportPdf(groupId, aliceId)))
+        assertThat(pdfText(pdf(groupId, aliceId)))
                 .doesNotContain("No expenses recorded.")
                 .containsPattern(row("2026-09-01", "Taxi", "10.00", "alice"));
     }
 
     @Test
     void pdfAc4_groupWithNoExpensesListsEveryMemberAtZero() throws IOException {
-        String text = pdfText(exportService.exportPdf(groupId, aliceId));
+        String text = pdfText(pdf(groupId, aliceId));
 
         assertThat(text).contains("No expenses recorded.");
         assertThat(text).containsPattern(row("alice", "0.00", "0.00", "0.00"));
         assertThat(text).containsPattern(row("bob", "0.00", "0.00", "0.00"));
+    }
+
+    @Test
+    void pdf_listsAFormerMemberWithoutANetBalance() throws IOException {
+        recordSettledTaxisAndRemoveBob();
+
+        String text = pdfText(pdf(groupId, aliceId));
+
+        assertThat(text).containsPattern(row("alice", "10.00", "10.00", "0.00"));
+        assertThat(text).containsPattern(row("bob \\(former member\\)", "10.00", "10.00", "–"));
+        assertThat(text).contains("Former members are listed");
+    }
+
+    @Test
+    void pdf_onlyExplainsFormerMembersWhenThereAreAny() throws IOException {
+        assertThat(pdfText(pdf(groupId, aliceId))).doesNotContain("Former members are listed");
     }
 
     @Test
@@ -234,13 +269,13 @@ class GroupExportIntegrationTest {
         expenseService.createExpense(cafeGroupId, new CreateExpenseRequest(
                 new BigDecimal("12.00"), "Ужин – ΣΟΥΒΛΑΚΙ", aliceId, List.of(aliceId), SEPT_1), aliceId);
 
-        assertThat(pdfText(exportService.exportPdf(cafeGroupId, aliceId)))
+        assertThat(pdfText(pdf(cafeGroupId, aliceId)))
                 .contains("Café Zoë €", "Ужин – ΣΟΥΒΛΑΚΙ");
     }
 
     @Test
     void pdfAc6_nonMemberIsRejected() {
-        assertThatThrownBy(() -> exportService.exportPdf(groupId, carolId))
+        assertThatThrownBy(() -> pdf(groupId, carolId))
                 .isInstanceOf(GroupAccessDeniedException.class);
     }
 
@@ -268,8 +303,8 @@ class GroupExportIntegrationTest {
 
     @Test
     void export_returnsTheContentForTheRequestedFormat() {
-        assertThat(exportService.export(groupId, aliceId, ExportFormat.CSV).content())
-                .isEqualTo(exportService.exportCsv(groupId, aliceId));
+        assertThat(new String(exportService.export(groupId, aliceId, ExportFormat.CSV).content(),
+                StandardCharsets.UTF_8)).startsWith(CSV_HEADER);
         assertThat(new String(exportService.export(groupId, aliceId, ExportFormat.PDF).content(), 0, 5,
                 StandardCharsets.US_ASCII)).isEqualTo("%PDF-");
     }
@@ -278,6 +313,15 @@ class GroupExportIntegrationTest {
     void exportAc6_nonMemberIsRejected() {
         assertThatThrownBy(() -> exportService.export(groupId, carolId, ExportFormat.CSV))
                 .isInstanceOf(GroupAccessDeniedException.class);
+    }
+
+    // Alice and Bob each pay for a taxi they share, so both balances are zero and Bob can leave.
+    private void recordSettledTaxisAndRemoveBob() {
+        expenseService.createExpense(groupId, new CreateExpenseRequest(
+                new BigDecimal("10.00"), "Taxi there", aliceId, List.of(aliceId, bobId), SEPT_1), aliceId);
+        expenseService.createExpense(groupId, new CreateExpenseRequest(
+                new BigDecimal("10.00"), "Taxi back", bobId, List.of(aliceId, bobId), SEPT_5), aliceId);
+        groupService.removeMember(groupId, bobId, aliceId);
     }
 
     private void recordGroceriesAndDinner() {
@@ -307,7 +351,11 @@ class GroupExportIntegrationTest {
         return Pattern.compile(String.join("\\s*", cells).replace(" ", "\\s+"));
     }
 
-    private static String csvText(byte[] csv) {
-        return new String(csv, StandardCharsets.UTF_8);
+    private String csv(Long group, Long user) {
+        return new String(exportService.export(group, user, ExportFormat.CSV).content(), StandardCharsets.UTF_8);
+    }
+
+    private byte[] pdf(Long group, Long user) {
+        return exportService.export(group, user, ExportFormat.PDF).content();
     }
 }

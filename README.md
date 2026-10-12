@@ -20,7 +20,7 @@ The following works today:
 - Set up a recurring expense, such as rent or a subscription, with a weekly, fortnightly or monthly schedule and an optional end date; it generates expenses automatically, and each generated expense is marked in the history and links back to the recurring expense that created it
 - See each member's balance, and the transactions behind a single member's balance
 - Generate a settlement plan for a group and mark individual payments as paid
-- Export a group's expense data from the group page, as a CSV file that opens cleanly in Excel or as a PDF that adds each member's total paid, total share and net balance
+- Export a group's expense data from the group page, as a CSV file that opens cleanly in Excel or as a PDF. Both list every expense followed by each member's total paid, total share and net balance, including anyone who has since left the group
 
 The following is not built yet:
 

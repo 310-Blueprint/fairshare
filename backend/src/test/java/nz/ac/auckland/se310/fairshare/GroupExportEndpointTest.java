@@ -79,7 +79,7 @@ class GroupExportEndpointTest {
         byte[] body = response.getContentAsByteArray();
         assertThat(Arrays.copyOf(body, 3)).containsExactly(0xEF, 0xBB, 0xBF);
         assertThat(new String(body, StandardCharsets.UTF_8))
-                .isEqualTo("﻿Date,Description,Amount,Currency,Original Amount,Original Currency,Paid By,Split\r\n");
+                .startsWith("\uFEFFDate,Description,Amount,Currency,Original Amount,Original Currency,Paid By,Split\r\n");
     }
 
     @Test

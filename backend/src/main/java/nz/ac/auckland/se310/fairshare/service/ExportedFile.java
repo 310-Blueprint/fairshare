@@ -1,6 +1,4 @@
-package nz.ac.auckland.se310.fairshare.dto;
-
-import nz.ac.auckland.se310.fairshare.service.ExportFormat;
+package nz.ac.auckland.se310.fairshare.service;
 
 /**
  * #12: a generated export ready to download. A class rather than a record, since a record's
