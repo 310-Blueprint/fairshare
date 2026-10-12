@@ -1,6 +1,6 @@
 import {useEffect, useState} from 'react';
 import {Link, useParams} from 'react-router-dom';
-import {getGroup, getGroupMembers} from '../api/groups';
+import {exportGroup, getGroup, getGroupMembers} from '../api/groups';
 import {getExpenses} from '../api/expenses';
 import {getRecurringExpenses} from '../api/recurringExpenses';
 import SettlementView from './SettlementView';
@@ -29,6 +29,18 @@ function balanceLine(member, currency) {
     return `${member.username} is settled up`;
 }
 
+// #12: hands a downloaded blob to the browser as a file save.
+function saveFile(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+}
+
 function GroupPage() {
     const {id} = useParams();
     const [group, setGroup] = useState(null);
@@ -39,6 +51,8 @@ function GroupPage() {
     const [error, setError] = useState(null);
     const [recurringExpensesError, setRecurringExpensesError] = useState(null);
     const [notFound, setNotFound] = useState(false);
+    const [exporting, setExporting] = useState(null);
+    const [exportError, setExportError] = useState(null);
 
     // Fetch the group, expenses, and members whenever the route changes so the page stays in sync.
     useEffect(() => {
@@ -81,6 +95,25 @@ function GroupPage() {
 
         load();
     }, [id]);
+
+    // #12: downloads the group's expenses as CSV or PDF.
+    async function handleExport(format) {
+        setExporting(format);
+        setExportError(null);
+        try {
+            const result = await exportGroup(id, format);
+            if (result.error) {
+                setExportError(result.error);
+                return;
+            }
+            saveFile(result.blob, result.filename);
+        } catch (err) {
+            console.error('Failed to export group', err);
+            setExportError('Could not export this group. Please try again.');
+        } finally {
+            setExporting(null);
+        }
+    }
 
     if (loading) {
         return <div className="page"><p>Loading…</p></div>;
@@ -205,6 +238,19 @@ function GroupPage() {
                 <section>
                     <h2>Settlement plan</h2>
                     <SettlementView groupId={group.id} baseCurrency={group.baseCurrency}/>
+                </section>
+
+                <section>
+                    <h2>Export</h2>
+                    <div className="export-actions">
+                        <button type="button" onClick={() => handleExport('csv')} disabled={exporting !== null}>
+                            {exporting === 'csv' ? 'Exporting…' : 'Export CSV'}
+                        </button>
+                        <button type="button" onClick={() => handleExport('pdf')} disabled={exporting !== null}>
+                            {exporting === 'pdf' ? 'Exporting…' : 'Export PDF'}
+                        </button>
+                    </div>
+                    {exportError && <span className="error">{exportError}</span>}
                 </section>
 
                 <Link to="/groups">Back to your groups</Link>

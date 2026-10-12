@@ -38,6 +38,9 @@ public class AppConfig {
 
     configuration.setAllowCredentials(true);
 
+    // #12: lets the frontend read the export's filename from the download response.
+    configuration.setExposedHeaders(List.of("Content-Disposition"));
+
     UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
 
     source.registerCorsConfiguration("/**", configuration);
