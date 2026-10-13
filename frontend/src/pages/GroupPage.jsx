@@ -1,6 +1,6 @@
 import {useEffect, useState} from 'react';
 import {Link, useParams} from 'react-router-dom';
-import {getGroup, getGroupMembers} from '../api/groups';
+import {exportGroup, getGroup, getGroupMembers} from '../api/groups';
 import {getExpenses} from '../api/expenses';
 import {getRecurringExpenses} from '../api/recurringExpenses';
 import SettlementView from './SettlementView';
@@ -29,6 +29,46 @@ function balanceLine(member, currency) {
     return `${member.username} is settled up`;
 }
 
+// #13 AC1, AC4: every recurring expense in the group, marked active or ended. A failure to load
+// them is shown inline here rather than hiding the rest of the group page.
+function RecurringExpenseList({recurringExpenses, error, currency}) {
+    if (error) {
+        return <span className="error">{error}</span>;
+    }
+    if (recurringExpenses.length === 0) {
+        return <p className="empty">No recurring expenses yet.</p>;
+    }
+    return (
+        <ul className="expense-list">
+            {recurringExpenses.map((recurringExpense) => (
+                <li key={recurringExpense.id} id={`recurring-expense-${recurringExpense.id}`}>
+                    <span className="expense-description">{recurringExpense.description}</span>
+                    <span className="expense-meta">
+                        {FREQUENCY_LABELS[recurringExpense.frequency]} · paid by {recurringExpense.paidByUsername} · starts {recurringExpense.startDate}
+                        {recurringExpense.endDate && ` · ends ${recurringExpense.endDate}`}
+                        {' · '}{recurringExpense.active ? 'Active' : 'Ended'}
+                    </span>
+                    <span className="expense-amount">
+                        {money(currency, recurringExpense.amount)}
+                    </span>
+                </li>
+            ))}
+        </ul>
+    );
+}
+
+// #12: hands a downloaded blob to the browser as a file save.
+function saveFile(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+}
+
 function GroupPage() {
     const {id} = useParams();
     const [group, setGroup] = useState(null);
@@ -39,6 +79,8 @@ function GroupPage() {
     const [error, setError] = useState(null);
     const [recurringExpensesError, setRecurringExpensesError] = useState(null);
     const [notFound, setNotFound] = useState(false);
+    const [exporting, setExporting] = useState(null);
+    const [exportError, setExportError] = useState(null);
 
     // Fetch the group, expenses, and members whenever the route changes so the page stays in sync.
     useEffect(() => {
@@ -79,8 +121,27 @@ function GroupPage() {
             }
         }
 
-        void load();
+        void load();   // errors are handled inside load()
     }, [id]);
+
+    // #12: downloads the group's expenses as CSV or PDF.
+    async function handleExport(format) {
+        setExporting(format);
+        setExportError(null);
+        try {
+            const result = await exportGroup(id, format);
+            if (result.error) {
+                setExportError(result.error);
+                return;
+            }
+            saveFile(result.blob, result.filename);
+        } catch (err) {
+            console.error('Failed to export group', err);
+            setExportError('Could not export this group. Please try again.');
+        } finally {
+            setExporting(null);
+        }
+    }
 
     if (loading) {
         return <div className="page"><p>Loading…</p></div>;
@@ -111,30 +172,6 @@ function GroupPage() {
 
     // A group is fully settled only when every member's net balance is zero.
     const settled = members.every((member) => Number(member.netBalance) === 0);
-    let recurringExpensesContent;
-    if (recurringExpensesError) {
-        recurringExpensesContent = <span className="error">{recurringExpensesError}</span>;
-    } else if (recurringExpenses.length === 0) {
-        recurringExpensesContent = <p className="empty">No recurring expenses yet.</p>;
-    } else {
-        recurringExpensesContent = (
-            <ul className="expense-list">
-                {recurringExpenses.map((recurringExpense) => (
-                    <li key={recurringExpense.id} id={`recurring-expense-${recurringExpense.id}`}>
-                        <span className="expense-description">{recurringExpense.description}</span>
-                        <span className="expense-meta">
-                            {FREQUENCY_LABELS[recurringExpense.frequency]} · paid by {recurringExpense.paidByUsername} · starts {recurringExpense.startDate}
-                            {recurringExpense.endDate && ` · ends ${recurringExpense.endDate}`}
-                            {' · '}{recurringExpense.active ? 'Active' : 'Ended'}
-                        </span>
-                        <span className="expense-amount">
-                            {money(group.baseCurrency, recurringExpense.amount)}
-                        </span>
-                    </li>
-                ))}
-            </ul>
-        );
-    }
 
     return (
         <div className="page">
@@ -179,8 +216,9 @@ function GroupPage() {
                     <h2>Recurring expenses</h2>
                     <Link className="action" to={`/groups/${id}/recurring-expenses/new`}>Add recurring expense</Link>
 
-                    {/* #13 AC1, AC4: every recurring expense in the group, marked active or ended */}
-                    {recurringExpensesContent}
+                    <RecurringExpenseList recurringExpenses={recurringExpenses}
+                                          error={recurringExpensesError}
+                                          currency={group.baseCurrency}/>
                 </section>
 
                 <section>
@@ -209,6 +247,19 @@ function GroupPage() {
                 <section>
                     <h2>Settlement plan</h2>
                     <SettlementView groupId={group.id} baseCurrency={group.baseCurrency}/>
+                </section>
+
+                <section>
+                    <h2>Export</h2>
+                    <div className="export-actions">
+                        <button type="button" onClick={() => handleExport('csv')} disabled={exporting !== null}>
+                            {exporting === 'csv' ? 'Exporting…' : 'Export CSV'}
+                        </button>
+                        <button type="button" onClick={() => handleExport('pdf')} disabled={exporting !== null}>
+                            {exporting === 'pdf' ? 'Exporting…' : 'Export PDF'}
+                        </button>
+                    </div>
+                    {exportError && <span className="error">{exportError}</span>}
                 </section>
 
                 <Link to="/groups">Back to your groups</Link>
