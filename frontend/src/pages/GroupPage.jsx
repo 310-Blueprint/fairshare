@@ -29,6 +29,34 @@ function balanceLine(member, currency) {
     return `${member.username} is settled up`;
 }
 
+// #13 AC1, AC4: every recurring expense in the group, marked active or ended. A failure to load
+// them is shown inline here rather than hiding the rest of the group page.
+function RecurringExpenseList({recurringExpenses, error, currency}) {
+    if (error) {
+        return <span className="error">{error}</span>;
+    }
+    if (recurringExpenses.length === 0) {
+        return <p className="empty">No recurring expenses yet.</p>;
+    }
+    return (
+        <ul className="expense-list">
+            {recurringExpenses.map((recurringExpense) => (
+                <li key={recurringExpense.id} id={`recurring-expense-${recurringExpense.id}`}>
+                    <span className="expense-description">{recurringExpense.description}</span>
+                    <span className="expense-meta">
+                        {FREQUENCY_LABELS[recurringExpense.frequency]} · paid by {recurringExpense.paidByUsername} · starts {recurringExpense.startDate}
+                        {recurringExpense.endDate && ` · ends ${recurringExpense.endDate}`}
+                        {' · '}{recurringExpense.active ? 'Active' : 'Ended'}
+                    </span>
+                    <span className="expense-amount">
+                        {money(currency, recurringExpense.amount)}
+                    </span>
+                </li>
+            ))}
+        </ul>
+    );
+}
+
 // #12: hands a downloaded blob to the browser as a file save.
 function saveFile(blob, filename) {
     const url = URL.createObjectURL(blob);
@@ -93,7 +121,7 @@ function GroupPage() {
             }
         }
 
-        load();
+        void load();   // errors are handled inside load()
     }, [id]);
 
     // #12: downloads the group's expenses as CSV or PDF.
@@ -188,28 +216,9 @@ function GroupPage() {
                     <h2>Recurring expenses</h2>
                     <Link className="action" to={`/groups/${id}/recurring-expenses/new`}>Add recurring expense</Link>
 
-                    {recurringExpensesError ? (
-                        <span className="error">{recurringExpensesError}</span>
-                    ) : recurringExpenses.length === 0 ? (
-                        /* #13 AC1, AC4: every recurring expense in the group, marked active or ended */
-                        <p className="empty">No recurring expenses yet.</p>
-                    ) : (
-                        <ul className="expense-list">
-                            {recurringExpenses.map((recurringExpense) => (
-                                <li key={recurringExpense.id} id={`recurring-expense-${recurringExpense.id}`}>
-                                    <span className="expense-description">{recurringExpense.description}</span>
-                                    <span className="expense-meta">
-                                        {FREQUENCY_LABELS[recurringExpense.frequency]} · paid by {recurringExpense.paidByUsername} · starts {recurringExpense.startDate}
-                                        {recurringExpense.endDate && ` · ends ${recurringExpense.endDate}`}
-                                        {' · '}{recurringExpense.active ? 'Active' : 'Ended'}
-                                    </span>
-                                    <span className="expense-amount">
-                                        {money(group.baseCurrency, recurringExpense.amount)}
-                                    </span>
-                                </li>
-                            ))}
-                        </ul>
-                    )}
+                    <RecurringExpenseList recurringExpenses={recurringExpenses}
+                                          error={recurringExpensesError}
+                                          currency={group.baseCurrency}/>
                 </section>
 
                 <section>
