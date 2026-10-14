@@ -158,6 +158,16 @@ textarea:focus {
     box-shadow: 0 0 0 3px rgba(102, 205, 164, 0.35);
 }
 
+/* Replaces the browser's own select arrow so selects line up with text inputs. */
+select {
+    appearance: none;
+    padding-right: var(--space-7);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%235f6662' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right var(--space-4) center;
+    cursor: pointer;
+}
+
 input[type="checkbox"],
 input[type="radio"] {
     width: 18px;
@@ -169,6 +179,36 @@ input[type="radio"] {
     margin-top: var(--space-1);
     font-size: 14px;
     color: var(--danger);
+}
+
+/* A confirmation that something worked, e.g. a saved profile. */
+.success {
+    margin: var(--space-3) 0;
+    padding: var(--space-3) var(--space-4);
+    color: var(--success);
+    background-color: var(--success-surface);
+    border-radius: var(--radius-input);
+    text-align: center;
+}
+
+/* Secondary text under a card's main content, e.g. "Need an account?" or a back link. */
+.card-footer {
+    margin: var(--space-5) 0 0;
+    text-align: center;
+    color: var(--text-muted);
+}
+
+/* Stacked full-width actions at the end of a form. */
+.form-actions {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    margin-top: var(--space-2);
+}
+
+.form-actions button {
+    width: 100%;
+    margin-top: 0;
 }
 
 .empty {

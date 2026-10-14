@@ -181,15 +181,17 @@ function UserManagement() {
           {error && <div className="error">{error}</div>}
           {message && <div className="success">{message}</div>}
 
-          <button type="submit">Save Changes</button>
-          <button type="button" onClick={handleLogout} className="button-secondary">
-            Log Out
-          </button>
+          <div className="form-actions">
+            <button type="submit">Save Changes</button>
+            <button type="button" onClick={handleLogout} className="button-secondary">
+              Log Out
+            </button>
+          </div>
         </form>
 
-        <div style={{ marginTop: '16px' }}>
+        <p className="card-footer">
           <Link to="/groups">Back to groups</Link>
-        </div>
+        </p>
       </div>
     </div>
   );

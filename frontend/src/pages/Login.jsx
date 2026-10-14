@@ -66,7 +66,7 @@ function Login() {
           <button type="submit">Log In</button>
         </form>
 
-        <p className="subtitle" style={{ marginTop: '20px' }}>
+        <p className="card-footer">
           Need an account? <Link to="/register">Create profile</Link>
         </p>
       </div>
