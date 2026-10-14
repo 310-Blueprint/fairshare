@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { getGroupBalances, computeSettlement, markSettlementPaid, getGroupMembers } from '../api/groups';
 
-export default function SettlementView({ groupId, baseCurrency }) {
+export default function SettlementView({ groupId, baseCurrency, refreshVersion = 0 }) {
     const [balances, setBalances] = useState(null);
     const [members, setMembers] = useState([]);
     const [settlement, setSettlement] = useState(null);
@@ -9,51 +9,38 @@ export default function SettlementView({ groupId, baseCurrency }) {
     const [error, setError] = useState(null);
     const [paying, setPaying] = useState(null);
 
-    // Fetches the latest member balances and regenerates the settlement plan when the group changes.
-    async function loadBalances() {
+    const requestVersion = useRef(0);
+
+    // Refresh both balances and the persisted plan. Even an empty plan must reach the server
+    // so obsolete pending payments are removed after the last expense is deleted.
+    const loadBalances = useCallback(async () => {
+        const request = ++requestVersion.current;
+        setLoading(true);
+        setError(null);
+        setSettlement(null);
         try {
-            setLoading(true);
-            setError(null);
             const [b, memberResult] = await Promise.all([
                 getGroupBalances(groupId),
                 getGroupMembers(groupId)
             ]);
-            const memberList = memberResult && Array.isArray(memberResult.members) ? memberResult.members : [];
-            setBalances(b || []);
-            setMembers(memberList);
-
-            if (!b || b.every(item => Number(item.balance) === 0)) {
-                setSettlement([]);
-                return;
-            }
-
-            const plan = await computeSettlement(groupId, b || []);
+            if (request !== requestVersion.current) return;
+            if (!Array.isArray(b) || memberResult.error) throw new Error('Could not load balances');
+            const plan = await computeSettlement(groupId, b);
+            if (request !== requestVersion.current) return;
+            setBalances(b);
+            setMembers(memberResult.members || []);
             setSettlement(plan || []);
         } catch {
-            setError('Could not load balances');
+            if (request === requestVersion.current) setError('Could not load settlement plan');
         } finally {
-            setLoading(false);
+            if (request === requestVersion.current) setLoading(false);
         }
-    }
-
-    useEffect(() => {
-        setSettlement(null);
-        void loadBalances();
     }, [groupId]);
 
-    // Recomputes the settlement plan using the current balances without reloading unrelated page data.
-    async function onCompute() {
-        try {
-            setLoading(true);
-            setError(null);
-            const plan = await computeSettlement(groupId, balances || []);
-            setSettlement(plan || []);
-        } catch {
-            setError('Failed to compute settlement');
-        } finally {
-            setLoading(false);
-        }
-    }
+    useEffect(() => {
+        void loadBalances();
+        return () => { requestVersion.current++; };
+    }, [loadBalances, refreshVersion]);
 
     // Marks a pending transfer as complete and then refreshes the balances so the UI reflects payment status.
     async function onMarkPaid(fromUserId, toUserId) {
@@ -79,7 +66,7 @@ export default function SettlementView({ groupId, baseCurrency }) {
 
     return (
         <div>
-            <button onClick={() => void onCompute()}>Generate settlement plan</button>
+            <button onClick={() => void loadBalances()} disabled={paying !== null}>Generate settlement plan</button>
             {settlement && (
                 <div>
                     {settlement.length === 0 ? (

@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import GroupPage from '../src/pages/GroupPage.jsx';
-import { exportGroup, getGroup, getGroupBalances, getGroupMembers } from '../src/api/groups';
+import { exportGroup, getGroup, getGroupBalances, getGroupMembers, computeSettlement } from '../src/api/groups';
 import { getExpenses, deleteExpense, getExpenseActivity } from '../src/api/expenses';
 import { getRecurringExpenses } from '../src/api/recurringExpenses';
 
@@ -44,6 +44,7 @@ beforeEach(() => {
     getExpenseActivity.mockResolvedValue({ activity: [] });
     getRecurringExpenses.mockResolvedValue({ recurringExpenses: [] });
     getGroupBalances.mockResolvedValue([]);
+    computeSettlement.mockResolvedValue([]);
     getGroupMembers.mockResolvedValue({
         members: [
             { userId: 1, username: 'alice', email: 'alice@test.com', netBalance: '0.00', currentUser: true },
@@ -365,4 +366,23 @@ it('an activity loading error leaves the group history visible', async () => {
     expect(await screen.findByText('Activity unavailable')).toBeInTheDocument();
     expect(screen.getByText('My entry')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Edit' })).toBeInTheDocument();
+});
+
+
+it('AC5: deleting an expense refreshes the visible settlement plan without navigating away', async () => {
+    mockOwnedAndOtherExpenses();
+    deleteExpense.mockResolvedValue({});
+    getGroupBalances.mockResolvedValue([{ userId: 1, balance: '-20.00' }, { userId: 2, balance: '20.00' }]);
+    getGroupMembers.mockResolvedValue({ members: [
+        { userId: 1, username: 'alice', netBalance: '-20.00', currentUser: true },
+        { userId: 2, username: 'bob', netBalance: '20.00' },
+    ] });
+    computeSettlement.mockResolvedValue([{ fromUserId: 2, toUserId: 1, amount: '20.00' }]);
+    renderPage();
+    expect(await screen.findByText('bob pays alice: NZD 20.00')).toBeInTheDocument();
+    getGroupBalances.mockResolvedValue([{ userId: 1, balance: '-5.00' }, { userId: 2, balance: '5.00' }]);
+    computeSettlement.mockResolvedValue([{ fromUserId: 2, toUserId: 1, amount: '5.00' }]);
+    await userEvent.click(screen.getByRole('button', { name: 'Delete My entry' }));
+    expect(await screen.findByText('bob pays alice: NZD 5.00')).toBeInTheDocument();
+    expect(screen.queryByText('bob pays alice: NZD 20.00')).not.toBeInTheDocument();
 });

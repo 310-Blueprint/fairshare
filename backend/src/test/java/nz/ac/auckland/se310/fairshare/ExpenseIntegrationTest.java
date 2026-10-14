@@ -305,6 +305,55 @@ class ExpenseIntegrationTest {
     }
 
     @Test
+    void historyAc5_reopenedPlanUsesEditedExpenseEvenWhenClientSendsOldBalances() {
+        var created = expenseService.createExpense(groupId, new CreateExpenseRequest(
+                new BigDecimal("40.00"), "Dinner", aliceId, List.of(aliceId, bobId), null), aliceId);
+        var staleRequest = new SettlementRequest(groupService.getBalances(groupId, bobId));
+        assertThat(groupService.computeSettlement(groupId, bobId, staleRequest))
+                .containsExactly(new SettlementLine(bobId, aliceId, new BigDecimal("20.00")));
+        expenseService.updateExpense(groupId, new CreateExpenseRequest(new BigDecimal("10.00"),
+                "Dinner", aliceId, List.of(aliceId, bobId), null), aliceId, created.id());
+        assertThat(groupService.computeSettlement(groupId, bobId, staleRequest))
+                .containsExactly(new SettlementLine(bobId, aliceId, new BigDecimal("5.00")));
+        assertThat(settlementRepository.findByGroupId(groupId)).hasSize(1)
+                .allSatisfy(payment -> assertThat(payment.getAmount()).isEqualByComparingTo("5.00"));
+    }
+
+    @Test
+    void historyAc5_deletedLastExpenseClearsTheOldPendingPlan() {
+        var created = expenseService.createExpense(groupId, new CreateExpenseRequest(
+                new BigDecimal("40.00"), "Dinner", aliceId, List.of(aliceId, bobId), null), aliceId);
+        var staleRequest = new SettlementRequest(groupService.getBalances(groupId, bobId));
+        assertThat(groupService.computeSettlement(groupId, bobId, staleRequest)).hasSize(1);
+        expenseService.deleteExpense(groupId, created.id(), aliceId);
+        assertThat(groupService.computeSettlement(groupId, bobId, staleRequest)).isEmpty();
+        assertThat(settlementRepository.findByGroupId(groupId)).isEmpty();
+        assertThat(groupService.getBalances(groupId, bobId))
+                .allSatisfy(balance -> assertThat(balance.balance()).isEqualByComparingTo("0.00"));
+    }
+
+    @Test
+    void historyAc5_correctedPlanPreservesAlreadyPaidTransfers() {
+        var created = expenseService.createExpense(groupId, new CreateExpenseRequest(
+                new BigDecimal("40.00"), "Dinner", aliceId, List.of(aliceId, bobId), null), aliceId);
+        var request = new SettlementRequest(List.of());
+        groupService.computeSettlement(groupId, bobId, request);
+        groupService.markSettlementPaid(groupId, bobId, aliceId, bobId);
+        expenseService.updateExpense(groupId, new CreateExpenseRequest(new BigDecimal("10.00"),
+                "Dinner", aliceId, List.of(aliceId, bobId), null), aliceId, created.id());
+        assertThat(groupService.computeSettlement(groupId, bobId, request))
+                .containsExactly(new SettlementLine(aliceId, bobId, new BigDecimal("15.00")));
+        expenseService.deleteExpense(groupId, created.id(), aliceId);
+        assertThat(groupService.computeSettlement(groupId, bobId, request))
+                .containsExactly(new SettlementLine(aliceId, bobId, new BigDecimal("20.00")));
+        var paid = settlementRepository.findByGroupId(groupId).stream()
+                .filter(payment -> payment.getSettlementDate() != null).toList();
+        assertThat(paid).hasSize(1);
+        assertThat(paid.getFirst().getAmount()).isEqualByComparingTo("20.00");
+        assertThat(paid.getFirst().getFromUser().getId()).isEqualTo(bobId);
+    }
+
+    @Test
     void historyAc4_activityRecordsEveryEditAndSurvivesDeletionForOtherMembers() {
         var created = expenseService.createExpense(groupId, new CreateExpenseRequest(
                 new BigDecimal("40.00"), "Dinner", bobId, List.of(aliceId, bobId), null), aliceId);

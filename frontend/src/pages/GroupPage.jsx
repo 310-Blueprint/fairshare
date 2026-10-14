@@ -84,7 +84,7 @@ function GroupPage() {
     const [exportError, setExportError] = useState(null);
     const [deleting, setDeleting] = useState(null);
     const [deleteError, setDeleteError] = useState(null);
-    const [activityVersion, setActivityVersion] = useState(0);
+    const [expenseVersion, setExpenseVersion] = useState(0);
 
     // Fetch the group, expenses, and members whenever the route changes so the page stays in sync.
     useEffect(() => {
@@ -143,7 +143,7 @@ function GroupPage() {
                 return;
             }
             setExpenses(previous => previous.filter(item => item.id !== expense.id));
-            setActivityVersion(version => version + 1);
+            setExpenseVersion(version => version + 1);
             const memberResult = await getGroupMembers(id);
             if (memberResult.error) {
                 setDeleteError(`Expense deleted, but balances could not refresh: ${memberResult.error}`);
@@ -257,7 +257,7 @@ function GroupPage() {
                     )}
                 </section>
 
-                <ExpenseActivity groupId={group.id} refreshVersion={activityVersion} />
+                <ExpenseActivity groupId={group.id} refreshVersion={expenseVersion} />
 
                 <section>
                     <h2>Recurring expenses</h2>
@@ -293,7 +293,7 @@ function GroupPage() {
 
                 <section>
                     <h2>Settlement plan</h2>
-                    <SettlementView groupId={group.id} baseCurrency={group.baseCurrency}/>
+                    <SettlementView groupId={group.id} baseCurrency={group.baseCurrency} refreshVersion={expenseVersion}/>
                 </section>
 
                 <section>
