@@ -43,6 +43,11 @@ public class Expense {
     @Column(name = "description", nullable = false, length = 255)
     private String description;
 
+    // #16 AC1: null for expenses recorded before categories existed, and for recurring occurrences.
+    @Enumerated(EnumType.STRING)
+    @Column(name = "category", length = 20)
+    private ExpenseCategory category;
+
     @Column(name = "expense_date", nullable = false)
     private LocalDate expenseDate;
 
@@ -100,6 +105,8 @@ public class Expense {
     public BigDecimal getExchangeRate() { return exchangeRate; }
     public String getDescription() { return description; }
     public void setDescription(String description) { this.description = description; }
+    public ExpenseCategory getCategory() { return category; }
+    public void setCategory(ExpenseCategory category) { this.category = category; }
     public LocalDate getExpenseDate() { return expenseDate; }
     public void setExpenseDate(LocalDate expenseDate) { this.expenseDate = expenseDate; }
     public Instant getCreatedAt() { return createdAt; }
