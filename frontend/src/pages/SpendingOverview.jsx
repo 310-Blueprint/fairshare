@@ -10,6 +10,18 @@ function barWidth(amount, largest) {
     return largest > 0 ? `${(Number(amount) / largest) * 100}%` : '0%';
 }
 
+function BarRow({ label, amount, largest, children }) {
+    return (
+        <li>
+            <span className="bar-label">{label}</span>
+            <span className="bar-track">
+                <span className="bar" style={{ width: barWidth(amount, largest) }} />
+            </span>
+            <span className="bar-amount">{children}</span>
+        </li>
+    );
+}
+
 function BreakdownChart({ title, lines, currency }) {
     const largest = Math.max(...lines.map((line) => Number(line.amount)));
     return (
@@ -17,13 +29,9 @@ function BreakdownChart({ title, lines, currency }) {
             <h2>{title}</h2>
             <ul className="bar-chart">
                 {lines.map((line) => (
-                    <li key={line.key}>
-                        <span className="bar-label">{line.label}</span>
-                        <span className="bar-track">
-                            <span className="bar" style={{ width: barWidth(line.amount, largest) }} />
-                        </span>
-                        <span className="bar-amount">{money(currency, line.amount)}</span>
-                    </li>
+                    <BarRow key={line.key} label={line.label} amount={line.amount} largest={largest}>
+                        {money(currency, line.amount)}
+                    </BarRow>
                 ))}
             </ul>
         </section>
@@ -54,16 +62,11 @@ function MonthlyChart({ months, currency }) {
             <h2>Month by month</h2>
             <ul className="bar-chart">
                 {months.map((entry) => (
-                    <li key={entry.month}>
-                        <span className="bar-label">{formatShortMonth(entry.month)}</span>
-                        <span className="bar-track">
-                            <span className="bar" style={{ width: barWidth(entry.total, largest) }} />
-                        </span>
-                        <span className="bar-amount">
-                            {money(currency, entry.total)}
-                            <MonthChange change={entry.changeFromPreviousMonth} currency={currency} />
-                        </span>
-                    </li>
+                    <BarRow key={entry.month} label={formatShortMonth(entry.month)} amount={entry.total}
+                            largest={largest}>
+                        {money(currency, entry.total)}
+                        <MonthChange change={entry.changeFromPreviousMonth} currency={currency} />
+                    </BarRow>
                 ))}
             </ul>
         </section>

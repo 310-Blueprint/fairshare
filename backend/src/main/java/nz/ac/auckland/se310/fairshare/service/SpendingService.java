@@ -29,8 +29,8 @@ import java.util.Map;
 public class SpendingService {
 
     // AC2: how many months, ending at the selected one, the month-by-month history covers.
-    static final int HISTORY_MONTHS = 6;
-    static final String UNCATEGORISED_KEY = "UNCATEGORISED";
+    private static final int HISTORY_MONTHS = 6;
+    private static final String UNCATEGORISED_KEY = "UNCATEGORISED";
     private static final String UNCATEGORISED_LABEL = "Uncategorised";
     private static final int MONEY_SCALE = 2;
     private static final int RATE_SCALE = 8; // matches ExpenseService
@@ -97,7 +97,7 @@ public class SpendingService {
         return new SpendingSummaryResponse(
                 selected.toString(),
                 converter.displayCurrency(),
-                money(monthlyTotals.get(selected)),
+                money(monthlyTotals.getOrDefault(selected, BigDecimal.ZERO)),
                 byCategory.lines(),
                 byGroup.lines(),
                 byPerson.lines(),

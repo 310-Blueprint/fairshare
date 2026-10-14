@@ -24,25 +24,34 @@ export function AmountField({ value, onChange, error }) {
     );
 }
 
-// #14 AC1, AC3: only supported ISO 4217 codes can be picked. emptyLabel adds a "no choice" option.
-export function CurrencyField({ value, currencies, onChange, error, emptyLabel }) {
+// The labelled dropdown behind the currency, category and payer fields.
+function SelectField({ id, label, value, onChange, error, children }) {
     return (
         <div className="form-group">
-            <label htmlFor="currency">Currency</label>
+            <label htmlFor={id}>{label}</label>
             <select
-                id="currency"
+                id={id}
                 value={value}
                 onChange={(event) => onChange(event.target.value)}
             >
-                {emptyLabel && <option value="">{emptyLabel}</option>}
-                {currencies.map((option) => (
-                    <option key={option.code} value={option.code}>
-                        {option.code} — {option.name}
-                    </option>
-                ))}
+                {children}
             </select>
             <FieldError message={error} />
         </div>
+    );
+}
+
+// #14 AC1, AC3: only supported ISO 4217 codes can be picked. emptyLabel adds a "no choice" option.
+export function CurrencyField({ value, currencies, onChange, error, emptyLabel }) {
+    return (
+        <SelectField id="currency" label="Currency" value={value} onChange={onChange} error={error}>
+            {emptyLabel && <option value="">{emptyLabel}</option>}
+            {currencies.map((option) => (
+                <option key={option.code} value={option.code}>
+                    {option.code} — {option.name}
+                </option>
+            ))}
+        </SelectField>
     );
 }
 
@@ -65,40 +74,24 @@ export function DescriptionField({ value, onChange, error, placeholder }) {
 // #16 AC1: optional, so the spending overview can break spending down by category.
 export function CategoryField({ value, onChange, error }) {
     return (
-        <div className="form-group">
-            <label htmlFor="category">Category</label>
-            <select
-                id="category"
-                value={value}
-                onChange={(event) => onChange(event.target.value)}
-            >
-                <option value="">No category</option>
-                {EXPENSE_CATEGORIES.map((option) => (
-                    <option key={option.value} value={option.value}>{option.label}</option>
-                ))}
-            </select>
-            <FieldError message={error} />
-        </div>
+        <SelectField id="category" label="Category" value={value} onChange={onChange} error={error}>
+            <option value="">No category</option>
+            {EXPENSE_CATEGORIES.map((option) => (
+                <option key={option.value} value={option.value}>{option.label}</option>
+            ))}
+        </SelectField>
     );
 }
 
 export function PayerSelect({ value, members, onChange, error }) {
     return (
-        <div className="form-group">
-            <label htmlFor="paidByUserId">Paid by</label>
-            <select
-                id="paidByUserId"
-                value={value}
-                onChange={(event) => onChange(event.target.value)}
-            >
-                {members.map((member) => (
-                    <option key={member.userId} value={member.userId}>
-                        {member.username}
-                    </option>
-                ))}
-            </select>
-            <FieldError message={error} />
-        </div>
+        <SelectField id="paidByUserId" label="Paid by" value={value} onChange={onChange} error={error}>
+            {members.map((member) => (
+                <option key={member.userId} value={member.userId}>
+                    {member.username}
+                </option>
+            ))}
+        </SelectField>
     );
 }
 
