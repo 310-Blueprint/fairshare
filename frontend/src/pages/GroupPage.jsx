@@ -171,6 +171,7 @@ function GroupPage() {
     }
 
     // A group is fully settled only when every member's net balance is zero.
+    const currentUserId = members.find(member => member.currentUser)?.userId;
     const settled = members.every((member) => Number(member.netBalance) === 0);
 
     return (
@@ -193,8 +194,10 @@ function GroupPage() {
                         <ul className="expense-list">
                             {expenses.map((expense) => (
                                 <li key={expense.id}>
-                                    <Link className="action"
-                                          to={`/groups/${id}/expenses/${expense.id}/edit`}>Edit</Link>
+                                    {currentUserId != null && expense.createdByUserId === currentUserId && (
+                                        <Link className="action"
+                                              to={`/groups/${id}/expenses/${expense.id}/edit`}>Edit</Link>
+                                    )}
                                     <span className="expense-description">{expense.description}</span>
                                     <span className="expense-meta">
                                         {expense.paidByUsername} paid on {expense.expenseDate}

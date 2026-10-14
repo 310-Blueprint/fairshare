@@ -29,6 +29,10 @@ public class RecurringExpense {
     @JoinColumn(name = "paid_by", nullable = false)
     private User paidBy;
 
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "created_by", nullable = false, updatable = false)
+    private User createdBy;
+
     @Column(name = "amount", nullable = false, precision = 10, scale = 2)
     private BigDecimal amount;
 
@@ -69,6 +73,12 @@ public class RecurringExpense {
      */
     public RecurringExpense(ExpenseGroup group, User paidBy, BigDecimal amount, String description,
                              Frequency frequency, LocalDate startDate, LocalDate endDate) {
+        this(group, paidBy, amount, description, frequency, startDate, endDate, paidBy);
+    }
+
+    public RecurringExpense(ExpenseGroup group, User paidBy, BigDecimal amount, String description,
+                            Frequency frequency, LocalDate startDate, LocalDate endDate, User createdBy) {
+        this.createdBy = createdBy;
         this.group = group;
         this.paidBy = paidBy;
         this.amount = amount;
@@ -114,6 +124,7 @@ public class RecurringExpense {
     public Long getId() { return id; }
     public ExpenseGroup getGroup() { return group; }
     public User getPaidBy() { return paidBy; }
+    public User getCreatedBy() { return createdBy; }
     public BigDecimal getAmount() { return amount; }
     public String getDescription() { return description; }
     public Frequency getFrequency() { return frequency; }

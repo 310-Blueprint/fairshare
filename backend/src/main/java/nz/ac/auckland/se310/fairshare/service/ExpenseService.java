@@ -3,6 +3,7 @@ package nz.ac.auckland.se310.fairshare.service;
 import nz.ac.auckland.se310.fairshare.dto.CreateExpenseRequest;
 import nz.ac.auckland.se310.fairshare.dto.ExpenseResponse;
 import nz.ac.auckland.se310.fairshare.exception.GroupAccessDeniedException;
+import nz.ac.auckland.se310.fairshare.exception.ExpenseAccessDeniedException;
 import nz.ac.auckland.se310.fairshare.exception.ExpenseNotFoundException;
 import nz.ac.auckland.se310.fairshare.exception.InvalidExpenseAmountException;
 import nz.ac.auckland.se310.fairshare.exception.InvalidPayerException;
@@ -80,7 +81,8 @@ public class ExpenseService {
         Conversion conversion = convert(group, request, expenseDate);
 
         Expense expense = new Expense(
-                group, payer.getUser(), conversion.amount(), request.description().trim(), expenseDate);
+                group, payer.getUser(), conversion.amount(), request.description().trim(), expenseDate,
+                null, group.getMember(currentUserId).getUser());
         expense.setConversion(conversion.originalAmount(), conversion.originalCurrency(),
                 conversion.exchangeRate(), conversion.amount());
         Expense saved = expenseRepository.save(expense);
@@ -101,6 +103,10 @@ public class ExpenseService {
 
         Expense expense = expenseRepository.findByIdAndGroupId(expenseId, groupId)
                 .orElseThrow(ExpenseNotFoundException::new);
+
+        if (!expense.getCreatedBy().getId().equals(currentUserId)) {
+            throw new ExpenseAccessDeniedException();
+        }
 
         UserInGroup originalPayer = group.getMember(expense.getPaidBy().getId());
         UserInGroup payer = group.getMember(request.paidByUserId());
@@ -145,7 +151,7 @@ public class ExpenseService {
         BigDecimal amount = recurringExpense.getAmount();
 
         Expense expense = new Expense(recurringExpense.getGroup(), payer.getUser(), amount,
-                recurringExpense.getDescription(), occurrenceDate, recurringExpense);
+                recurringExpense.getDescription(), occurrenceDate, recurringExpense, recurringExpense.getCreatedBy());
         Expense saved = expenseRepository.save(expense);
 
         applyEqualSplit(payer, amount, members, saved);
@@ -274,6 +280,6 @@ public class ExpenseService {
                 expense.getRecurringExpense() != null ? expense.getRecurringExpense().getId() : null,
                 expense.getOriginalAmount(),
                 expense.getOriginalCurrency(),
-                expense.getExchangeRate());
+                expense.getExchangeRate(), expense.getCreatedBy().getId());
     }
 }

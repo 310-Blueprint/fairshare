@@ -252,3 +252,17 @@ it('#12: a failed export shows the error and leaves the buttons usable', async (
     expect(await screen.findByText('You are not a member of this group')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Export PDF' })).toBeEnabled();
 });
+
+
+it('shows Edit only for expenses created by the current user, regardless of payer', async () => {
+    getExpenses.mockResolvedValue({ expenses: [
+        { id: 10, createdByUserId: 1, paidByUserId: 2, paidByUsername: 'bob',
+          amount: '10.00', description: 'My entry', expenseDate: '2026-10-14' },
+        { id: 11, createdByUserId: 2, paidByUserId: 1, paidByUsername: 'alice',
+          amount: '20.00', description: 'Their entry', expenseDate: '2026-10-14' },
+    ] });
+    renderPage();
+    const edit = await screen.findByRole('link', { name: 'Edit' });
+    expect(edit).toHaveAttribute('href', '/groups/1/expenses/10/edit');
+    expect(screen.getAllByRole('link', { name: 'Edit' })).toHaveLength(1);
+});

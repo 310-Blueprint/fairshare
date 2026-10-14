@@ -23,6 +23,11 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(errors);
     }
 
+    @ExceptionHandler(ExpenseAccessDeniedException.class)
+    public ResponseEntity<Map<String, String>> handleExpenseAccessDenied(ExpenseAccessDeniedException ex) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of(ERROR_KEY, ex.getMessage()));
+    }
+
     @ExceptionHandler(GroupNotFoundException.class)
     public ResponseEntity<Map<String, String>> handleGroupNotFound(GroupNotFoundException ex) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND)

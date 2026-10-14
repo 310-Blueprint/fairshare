@@ -303,6 +303,24 @@ class ExpenseIntegrationTest {
     }
 
     @Test
+    void historyAc1_payerCannotEditAnotherMembersExpenseAndNothingChanges() {
+        ExpenseResponse created = expenseService.createExpense(groupId, new CreateExpenseRequest(
+                new BigDecimal("40.00"), "Dinner", bobId, List.of(aliceId, bobId), null), aliceId);
+        var before = balances();
+        var original = expenseService.getExpense(groupId, created.id(), bobId);
+        assertThat(created.createdByUserId()).isEqualTo(aliceId);
+        var update = new CreateExpenseRequest(new BigDecimal("100.00"), "Changed", aliceId,
+                List.of(aliceId), null);
+        assertThatThrownBy(() -> expenseService.updateExpense(groupId, update, bobId, created.id()))
+                .isInstanceOf(nz.ac.auckland.se310.fairshare.exception.ExpenseAccessDeniedException.class);
+        assertThat(expenseService.getExpense(groupId, created.id(), bobId)).isEqualTo(original);
+        assertThat(balances()).isEqualTo(before);
+        // Changing the payer never transfers ownership.
+        expenseService.updateExpense(groupId, update, aliceId, created.id());
+        assertThat(expenseService.getExpense(groupId, created.id(), aliceId).createdByUserId()).isEqualTo(aliceId);
+    }
+
+    @Test
     void ac7_editingAnExpenseUpdatesTheBalances() {
         var request = new CreateExpenseRequest(new BigDecimal(GROCERIES_AMOUNT), GROCERIES, bobId, memberIds, null);
         ExpenseResponse created = expenseService.createExpense(groupId, request, aliceId);
