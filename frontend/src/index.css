@@ -1,6 +1,6 @@
 /* #83: design tokens for the redesign. Every screen takes its colours, type and spacing from here. */
 :root {
-    --bg: #181c1b;
+    --bg: #151a18;
     --surface: #fcfbf8;
     --surface-muted: #f1efe9;
     --border: #e3e0d8;
@@ -75,7 +75,7 @@ h2 {
 }
 
 .page {
-    min-height: calc(100vh - 80px);
+    min-height: calc(100vh - 96px);
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -314,16 +314,15 @@ form button[type="submit"] {
     align-items: center;
     justify-content: space-between;
     min-height: 80px;
-    padding-top: var(--space-4);
-    padding-bottom: var(--space-4);
+    padding: var(--space-4) 18px;
 }
 
 .profile-button {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 52px;
-    height: 52px;
+    width: 64px;
+    height: 64px;
     color: var(--accent);
     background-color: var(--surface);
     border: 2px solid var(--accent);
@@ -340,10 +339,10 @@ form button[type="submit"] {
     align-items: center;
 }
 
-/* The logo PNG has its own dark tile, which matches the page background. */
+/* The logo PNG has a dark tile matching --bg, and padding around the mark, hence the negative margin. */
 .logo-image {
     display: block;
-    height: 52px;
+    height: 72px;
     width: auto;
-    border-radius: var(--radius-input);
+    margin: -8px 0;
 }

@@ -1,6 +1,8 @@
 ﻿import {StrictMode} from 'react';
 import {createRoot} from 'react-dom/client';
 import {createBrowserRouter, redirect, RouterProvider} from 'react-router-dom';
+// Shared styles load first so each page's own stylesheet can build on them.
+import './index.css';
 import UserProfile from './UserProfile.jsx';
 import GroupsOverview from './pages/GroupsOverview.jsx';
 import CreateGroup from './pages/CreateGroup.jsx';
@@ -13,7 +15,6 @@ import AddExpense from './pages/AddExpense.jsx';
 import AddRecurringExpense from './pages/AddRecurringExpense.jsx';
 import Login from './pages/Login.jsx';
 import UserManagement from './pages/UserManagement.jsx';
-import './index.css';
 import App from './App.jsx';
 import {getCurrentUser} from "./api/users.js";
 import EditExpense from './pages/ManageExpense.jsx';

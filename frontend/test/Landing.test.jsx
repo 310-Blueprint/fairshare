@@ -29,3 +29,22 @@ it('shows sign-up actions when no session exists', async () => {
 
     expect(await screen.findByText('Log-in')).toBeInTheDocument();
 });
+it('#83: shows the three logged-in actions, with the profile left to the header', async () => {
+    getCurrentUser.mockResolvedValue({ id: 1, username: 'alice' });
+
+    render(<MemoryRouter><Landing /></MemoryRouter>);
+
+    expect(await screen.findByRole('link', { name: 'Create Group' })).toHaveAttribute('href', '/groups/new');
+    expect(screen.getByRole('link', { name: 'My Groups' })).toHaveAttribute('href', '/groups');
+    expect(screen.getByRole('link', { name: 'Individual Debts' })).toHaveAttribute('href', '/debts');
+    expect(screen.queryByRole('link', { name: 'My Profile' })).not.toBeInTheDocument();
+});
+
+it('#83: welcomes the user under the large logo', async () => {
+    getCurrentUser.mockResolvedValue(null);
+
+    render(<MemoryRouter><Landing /></MemoryRouter>);
+
+    expect(await screen.findByRole('heading', { name: 'Welcome to FairShare' })).toBeInTheDocument();
+    expect(screen.getByAltText('FairShare logo')).toBeInTheDocument();
+});

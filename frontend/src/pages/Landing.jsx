@@ -2,6 +2,7 @@ import {Link} from 'react-router-dom';
 import {useEffect, useState} from 'react';
 import './Landing.css';
 import {getCurrentUser} from "../api/users.js";
+import FairShareLogo from '../resources/FairShareLogo.png';
 
 function Landing() {
     const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -12,23 +13,25 @@ function Landing() {
             .catch(() =>  setIsLoggedIn(false))
     }, []);
 
+    // #83: the profile page is reached from the header's profile button, so it isn't repeated here.
     return (
         <div className="page landing">
-            <div className="card">
-                <h1>Welcome to FairShare</h1>
-                <p className="subtitle">Easily split bills and manage group expenses.</p>
+            <img src={FairShareLogo} alt="FairShare logo" className="landing-logo"/>
+            <h1 className="landing-title">Welcome to Fair<span className="accent-text">Share</span></h1>
+
+            <div className="card landing-card">
+                <p className="landing-tagline">Easily split bills and manage group expenses</p>
 
                 <div className="actions">
                     {isLoggedIn ? (
                         <>
-                            <Link to="/groups/new" className="button landingLink">Create Group</Link>
-                            <Link to="/groups" className="button landingLink">My Groups</Link>
-                            <Link to="/debts" className="button landingLink">Individual Debts</Link>
-                            <Link to="/profile" className="button">My Profile</Link>
+                            <Link to="/groups/new" className="button">Create Group</Link>
+                            <Link to="/groups" className="button">My Groups</Link>
+                            <Link to="/debts" className="button">Individual Debts</Link>
                         </>
                     ) : (
                         <>
-                            <Link to="/register" className="button landingLink">Create Profile</Link>
+                            <Link to="/register" className="button">Create Profile</Link>
                             <Link to="/login" className="button">Log-in</Link>
                         </>
                     )}

@@ -4,8 +4,8 @@ import FairShareLogo from '../resources/FairShareLogo.png';
 // #83: the profile button from the redesign mockup, a person outline in a light circle.
 function ProfileIcon() {
   return (
-    <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor"
-         strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
+    <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor"
+         strokeWidth="1.7" strokeLinecap="round" aria-hidden="true">
       <circle cx="12" cy="8" r="3.5" />
       <path d="M5 20v-1.5A4.5 4.5 0 0 1 9.5 14h5a4.5 4.5 0 0 1 4.5 4.5V20" />
     </svg>
@@ -18,7 +18,7 @@ function Header() {
 
   return (
     <header className="header">
-      <div className="container header-inner">
+      <div className="header-inner">
         <Link to="/profile" className="profile-button" aria-label="My profile">
           <ProfileIcon />
         </Link>

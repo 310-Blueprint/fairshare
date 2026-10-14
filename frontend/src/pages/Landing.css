@@ -1,10 +1,52 @@
+/* #83: the home screen from the redesign mockup. */
+.landing {
+    justify-content: flex-start;
+    gap: var(--space-4);
+    padding-top: var(--space-6);
+}
+
+/* The PNG's dark tile matches the page background, so only the mark shows. */
+.landing-logo {
+    display: block;
+    width: 190px;
+    margin-bottom: calc(-1 * var(--space-6));
+    height: auto;
+}
+
+.landing-title {
+    margin: 0;
+    font-size: clamp(2.5rem, 3.6vw, 3rem);
+    text-align: center;
+    color: var(--text-on-dark);
+}
+
+.accent-text {
+    color: var(--accent);
+}
+
+.landing-card {
+    max-width: 680px;
+    margin-top: var(--space-6);
+    padding: var(--space-7) var(--space-7);
+    text-align: center;
+}
+
+.landing-tagline {
+    max-width: 320px;
+    margin: 0 auto var(--space-7);
+    font-size: 1.375rem;
+    line-height: 1.4;
+}
+
 .actions {
     display: flex;
-    gap: 1rem;
+    flex-wrap: wrap;
+    gap: var(--space-4);
     align-items: center;
     justify-content: center;
 }
 
-.landingLink {
-    margin-right: 0;
+.actions .button {
+    min-width: 180px;
+    min-height: 58px;
 }
