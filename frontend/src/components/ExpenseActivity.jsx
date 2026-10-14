@@ -26,26 +26,33 @@ export default function ExpenseActivity({ groupId, refreshVersion = 0 }) {
         return () => { cancelled = true; };
     }, [groupId, refreshVersion]);
 
+    let content;
+    if (loading) {
+        content = <p>Loading expense activity...</p>;
+    } else if (error) {
+        content = <p className="error" role="alert">{error}</p>;
+    } else if (activity.length === 0) {
+        content = <p className="empty">No expense edits or deletions yet.</p>;
+    } else {
+        content = (
+            <ul className="expense-activity-list">
+                {activity.map(event => (
+                    <li key={event.id}>
+                        <span>{event.actorUsername} {event.action === 'DELETED' ? 'deleted' : 'edited'} expense
+                            {' "'}{event.expenseDescription}{'"'} (#{event.expenseId})</span>
+                        <time dateTime={event.changedAt}>
+                            {new Date(event.changedAt).toLocaleString()}
+                        </time>
+                    </li>
+                ))}
+            </ul>
+        );
+    }
+
     return (
         <section aria-labelledby="expense-activity-heading">
             <h2 id="expense-activity-heading">Expense activity</h2>
-            {loading ? <p>Loading expense activity...</p> : error ? (
-                <p className="error" role="alert">{error}</p>
-            ) : activity.length === 0 ? (
-                <p className="empty">No expense edits or deletions yet.</p>
-            ) : (
-                <ul className="expense-activity-list">
-                    {activity.map(event => (
-                        <li key={event.id}>
-                            <span>{event.actorUsername} {event.action === 'DELETED' ? 'deleted' : 'edited'} expense
-                                {' "'}{event.expenseDescription}{'"'} (#{event.expenseId})</span>
-                            <time dateTime={event.changedAt}>
-                                {new Date(event.changedAt).toLocaleString()}
-                            </time>
-                        </li>
-                    ))}
-                </ul>
-            )}
+            {content}
         </section>
     );
 }
