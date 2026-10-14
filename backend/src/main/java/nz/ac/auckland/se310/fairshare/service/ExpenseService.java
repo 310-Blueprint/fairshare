@@ -140,6 +140,20 @@ public class ExpenseService {
         expenseRepository.save(expense);
     }
 
+    /** Deletes an expense and reverses its contribution to current members' balances atomically. */
+    @Transactional
+    public void deleteExpense(Long groupId, Long expenseId, Long currentUserId) {
+        ExpenseGroup group = groupRepository.findByIdAndMembersUserId(groupId, currentUserId)
+                .orElseThrow(GroupAccessDeniedException::new);
+        Expense expense = expenseRepository.findByIdAndGroupId(expenseId, groupId)
+                .orElseThrow(ExpenseNotFoundException::new);
+        if (!expense.getCreatedBy().getId().equals(currentUserId)) {
+            throw ExpenseAccessDeniedException.forDelete();
+        }
+        reverseSplit(expense, group.getMember(expense.getPaidBy().getId()));
+        expenseRepository.delete(expense);
+    }
+
     /**
      * Creates one occurrence of a recurring expense (AC2). Reuses the same equal-split logic as
      * a manually recorded expense; the caller has already resolved the payer and participants
@@ -208,7 +222,11 @@ public class ExpenseService {
 
     private void updateSplit(Expense expense, UserInGroup originalPayer, UserInGroup newPayer,
                              BigDecimal newAmount, List<UserInGroup> members) {
-        // First, reverse the previous split
+        reverseSplit(expense, originalPayer);
+        applyEqualSplit(newPayer, newAmount, members, expense);
+    }
+
+    private void reverseSplit(Expense expense, UserInGroup originalPayer) {
         List<ExpenseShare> existingShares = expenseShareRepository.findByExpenseId(expense.getId());
         for (ExpenseShare share : existingShares) {
             UserInGroup member = expense.getGroup().getMember(share.getUser().getId());
@@ -222,10 +240,10 @@ public class ExpenseService {
         // unique constraint on (user_id, expense_id) can be violated by Hibernate's action ordering.
         expenseShareRepository.flush();
         // Revert the original payer's owed/owed-to adjustment
-        originalPayer.adjustNetBalance(expense.getAmount());
-
-        // Apply the new split
-        applyEqualSplit(newPayer, newAmount, members, expense);
+        // A former payer may have left after settling; only current members have stored balances.
+        if (originalPayer != null) {
+            originalPayer.adjustNetBalance(expense.getAmount());
+        }
     }
 
     /**

@@ -1,7 +1,7 @@
 import {useEffect, useState} from 'react';
 import {Link, useParams} from 'react-router-dom';
 import {exportGroup, getGroup, getGroupMembers} from '../api/groups';
-import {getExpenses} from '../api/expenses';
+import {getExpenses, deleteExpense} from '../api/expenses';
 import {getRecurringExpenses} from '../api/recurringExpenses';
 import SettlementView from './SettlementView';
 import {formatExpenseAmount} from '../utils/formatExpenseAmount';
@@ -81,6 +81,8 @@ function GroupPage() {
     const [notFound, setNotFound] = useState(false);
     const [exporting, setExporting] = useState(null);
     const [exportError, setExportError] = useState(null);
+    const [deleting, setDeleting] = useState(null);
+    const [deleteError, setDeleteError] = useState(null);
 
     // Fetch the group, expenses, and members whenever the route changes so the page stays in sync.
     useEffect(() => {
@@ -123,6 +125,31 @@ function GroupPage() {
 
         void load();   // errors are handled inside load()
     }, [id]);
+
+    async function handleDelete(expense) {
+        const currentUserId = members.find(member => member.currentUser)?.userId;
+        if (deleting !== null || currentUserId == null || expense.createdByUserId !== currentUserId) return;
+        setDeleting(expense.id);
+        setDeleteError(null);
+        try {
+            const result = await deleteExpense(id, expense.id);
+            if (result.error) {
+                setDeleteError(result.error);
+                return;
+            }
+            setExpenses(previous => previous.filter(item => item.id !== expense.id));
+            const memberResult = await getGroupMembers(id);
+            if (memberResult.error) {
+                setDeleteError(`Expense deleted, but balances could not refresh: ${memberResult.error}`);
+            } else {
+                setMembers(memberResult.members);
+            }
+        } catch {
+            setDeleteError('Could not complete deletion or refresh the group. Reload to check the latest history.');
+        } finally {
+            setDeleting(null);
+        }
+    }
 
     // #12: downloads the group's expenses as CSV or PDF.
     async function handleExport(format) {
@@ -186,6 +213,8 @@ function GroupPage() {
                     <h2>Expenses</h2>
                     <Link className="action" to={`/groups/${id}/expenses/new`}>Add an expense</Link>
 
+                    {deleteError && <p className="error" role="alert">{deleteError}</p>}
+
                     {/* AC7: every member sees the expense with amount, description, payer and date */}
                     {/* #8 AC7: Expenses can be edited */}
                     {expenses.length === 0 ? (
@@ -195,8 +224,15 @@ function GroupPage() {
                             {expenses.map((expense) => (
                                 <li key={expense.id}>
                                     {currentUserId != null && expense.createdByUserId === currentUserId && (
-                                        <Link className="action"
-                                              to={`/groups/${id}/expenses/${expense.id}/edit`}>Edit</Link>
+                                        <div className="expense-actions">
+                                            <Link className="action"
+                                                  to={`/groups/${id}/expenses/${expense.id}/edit`}>Edit</Link>
+                                            <button className="expense-delete-link" type="button" onClick={() => void handleDelete(expense)}
+                                                    disabled={deleting !== null}
+                                                    aria-label={`Delete ${expense.description}`}>
+                                                {deleting === expense.id ? 'Deleting...' : 'Delete'}
+                                            </button>
+                                        </div>
                                     )}
                                     <span className="expense-description">{expense.description}</span>
                                     <span className="expense-meta">

@@ -40,6 +40,12 @@ public class ExpenseController {
         return ResponseEntity.noContent().build();
     }
 
+    @DeleteMapping("/{expenseId}")
+    public ResponseEntity<Void> delete(@PathVariable Long groupId, @PathVariable Long expenseId) {
+        expenseService.deleteExpense(groupId, expenseId, currentUser.currentUserId());
+        return ResponseEntity.noContent().build();
+    }
+
     @GetMapping
     public List<ExpenseResponse> list(@PathVariable Long groupId) {
         return expenseService.getExpensesForGroup(groupId, currentUser.currentUserId());

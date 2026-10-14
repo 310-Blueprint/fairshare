@@ -1,5 +1,5 @@
 import { afterEach, expect, it, vi } from 'vitest';
-import { createExpense } from '../src/api/expenses';
+import { createExpense, deleteExpense } from '../src/api/expenses';
 
 afterEach(() => {
     vi.unstubAllGlobals();
@@ -39,4 +39,19 @@ it('moves a message that belongs to no field onto the form', async () => {
     const result = await createExpense(1, { paidByUserId: 7 });
 
     expect(result.errors).toEqual({ form: 'Payer must be a member of the group' });
+});
+
+
+it('deletes with session credentials and accepts an empty 204 response', async () => {
+    const fetchMock = respondWith(204);
+    expect(await deleteExpense(1, 9)).toEqual({});
+    expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('/groups/1/expenses/9'), {
+        method: 'DELETE', credentials: 'include',
+    });
+});
+
+it('returns the authorisation error when deletion receives 403', async () => {
+    const message = 'Only the creator of this expense can delete it';
+    respondWith(403, { error: message });
+    expect(await deleteExpense(1, 9)).toEqual({ error: message });
 });

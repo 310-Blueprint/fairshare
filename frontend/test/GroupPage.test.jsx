@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import GroupPage from '../src/pages/GroupPage.jsx';
 import { exportGroup, getGroup, getGroupBalances, getGroupMembers } from '../src/api/groups';
-import { getExpenses } from '../src/api/expenses';
+import { getExpenses, deleteExpense } from '../src/api/expenses';
 import { getRecurringExpenses } from '../src/api/recurringExpenses';
 
 vi.mock('../src/api/groups', () => ({
@@ -19,6 +19,7 @@ vi.mock('../src/api/groups', () => ({
 
 vi.mock('../src/api/expenses', () => ({
     getExpenses: vi.fn(),
+    deleteExpense: vi.fn(),
 }));
 
 vi.mock('../src/api/recurringExpenses', () => ({
@@ -265,4 +266,40 @@ it('shows Edit only for expenses created by the current user, regardless of paye
     const edit = await screen.findByRole('link', { name: 'Edit' });
     expect(edit).toHaveAttribute('href', '/groups/1/expenses/10/edit');
     expect(screen.getAllByRole('link', { name: 'Edit' })).toHaveLength(1);
+});
+
+
+function mockOwnedAndOtherExpenses() {
+    getExpenses.mockResolvedValue({ expenses: [
+        { id: 10, createdByUserId: 1, paidByUserId: 2, paidByUsername: 'bob',
+          amount: '10.00', description: 'My entry', expenseDate: '2026-10-14' },
+        { id: 11, createdByUserId: 2, paidByUserId: 1, paidByUsername: 'alice',
+          amount: '20.00', description: 'Their entry', expenseDate: '2026-10-14' },
+    ] });
+}
+
+it('shows Delete only to the creator and removes a successfully deleted expense', async () => {
+    mockOwnedAndOtherExpenses();
+    deleteExpense.mockResolvedValue({});
+    renderPage();
+    const button = await screen.findByRole('button', { name: 'Delete My entry' });
+    expect(screen.queryByRole('button', { name: 'Delete Their entry' })).not.toBeInTheDocument();
+    getGroupMembers.mockResolvedValue({ members: [
+        { userId: 1, username: 'alice', netBalance: '7.00', currentUser: true },
+    ] });
+    await userEvent.click(button);
+    expect(deleteExpense).toHaveBeenCalledWith('1', 10);
+    expect(await screen.findByText('alice owes NZD 7.00')).toBeInTheDocument();
+    expect(screen.queryByText('My entry')).not.toBeInTheDocument();
+    expect(screen.getByText('Their entry')).toBeInTheDocument();
+});
+
+it('keeps the expense visible when deletion is rejected and displays the server error', async () => {
+    mockOwnedAndOtherExpenses();
+    deleteExpense.mockResolvedValue({ error: 'Only the creator of this expense can delete it' });
+    renderPage();
+    await userEvent.click(await screen.findByRole('button', { name: 'Delete My entry' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Only the creator');
+    expect(screen.getByText('My entry')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Delete My entry' })).toBeEnabled();
 });

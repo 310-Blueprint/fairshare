@@ -11,6 +11,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 class ExpenseControllerTest {
@@ -26,5 +27,25 @@ class ExpenseControllerTest {
                 """))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.error").value("Only the creator of this expense can edit it"));
+    }
+    @Test
+    void nonCreatorDeletionReturns403() throws Exception {
+        ExpenseService service = mock(ExpenseService.class);
+        doThrow(ExpenseAccessDeniedException.forDelete()).when(service).deleteExpense(1L, 9L, 2L);
+        var mvc = MockMvcBuilders.standaloneSetup(new ExpenseController(service, () -> 2L))
+                .setControllerAdvice(new GlobalExceptionHandler()).build();
+        mvc.perform(delete("/groups/1/expenses/9"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.error").value("Only the creator of this expense can delete it"));
+    }
+
+    @Test
+    void creatorDeletionReturns204WithoutABody() throws Exception {
+        ExpenseService service = mock(ExpenseService.class);
+        var mvc = MockMvcBuilders.standaloneSetup(new ExpenseController(service, () -> 1L))
+                .setControllerAdvice(new GlobalExceptionHandler()).build();
+        mvc.perform(delete("/groups/1/expenses/9"))
+                .andExpect(status().isNoContent()).andExpect(content().string(""));
+        verify(service).deleteExpense(1L, 9L, 1L);
     }
 }

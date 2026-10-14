@@ -64,3 +64,16 @@ export async function getExpense(id, expenseId) {
 
     return { expense: await response.json() };
 }
+
+export async function deleteExpense(id, expenseId) {
+    const groupId = requirePositiveInteger(id, 'Group ID');
+    const validatedExpenseId = requirePositiveInteger(expenseId, 'Expense ID');
+    const response = await fetch(`${API_BASE}/groups/${groupId}/expenses/${validatedExpenseId}`, {
+        method: 'DELETE',
+        credentials: 'include'
+    });
+    if (!response.ok) {
+        return { error: await readError(response, 'Could not delete this expense.') };
+    }
+    return {};
+}
