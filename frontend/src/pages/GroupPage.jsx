@@ -129,6 +129,9 @@ function GroupPage() {
     async function handleDelete(expense) {
         const currentUserId = members.find(member => member.currentUser)?.userId;
         if (deleting !== null || currentUserId == null || expense.createdByUserId !== currentUserId) return;
+        if (!window.confirm(`Delete "${expense.description}"? This will remove the expense and update the group's balances.`)) {
+            return;
+        }
         setDeleting(expense.id);
         setDeleteError(null);
         try {

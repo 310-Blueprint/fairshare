@@ -1,4 +1,4 @@
-import { it, expect, vi, beforeEach } from 'vitest';
+import { it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
@@ -37,6 +37,7 @@ const GROUP = {
 
 beforeEach(() => {
     vi.clearAllMocks();
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
     getGroup.mockResolvedValue(GROUP);
     getExpenses.mockResolvedValue({ expenses: [] });
     getRecurringExpenses.mockResolvedValue({ recurringExpenses: [] });
@@ -46,6 +47,10 @@ beforeEach(() => {
             { userId: 1, username: 'alice', email: 'alice@test.com', netBalance: '0.00', currentUser: true },
         ],
     });
+});
+
+afterEach(() => {
+    vi.restoreAllMocks();
 });
 
 function renderPage() {
@@ -302,4 +307,36 @@ it('keeps the expense visible when deletion is rejected and displays the server 
     expect(await screen.findByRole('alert')).toHaveTextContent('Only the creator');
     expect(screen.getByText('My entry')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Delete My entry' })).toBeEnabled();
+});
+
+
+it('AC3: cancelling the confirmation leaves the expense and balances unchanged', async () => {
+    mockOwnedAndOtherExpenses();
+    window.confirm.mockReturnValue(false);
+    renderPage();
+    const button = await screen.findByRole('button', { name: 'Delete My entry' });
+    const memberLoads = getGroupMembers.mock.calls.length;
+    await userEvent.click(button);
+    expect(window.confirm).toHaveBeenCalledWith(
+        'Delete "My entry"? This will remove the expense and update the group\'s balances.'
+    );
+    expect(deleteExpense).not.toHaveBeenCalled();
+    expect(getGroupMembers).toHaveBeenCalledTimes(memberLoads);
+    expect(screen.getByText('My entry')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Delete My entry' })).toBeEnabled();
+});
+
+it('AC3: cancelling then explicitly confirming sends only one deletion request', async () => {
+    mockOwnedAndOtherExpenses();
+    window.confirm.mockReturnValueOnce(false).mockReturnValueOnce(true);
+    deleteExpense.mockResolvedValue({});
+    renderPage();
+    const button = await screen.findByRole('button', { name: 'Delete My entry' });
+    await userEvent.click(button);
+    expect(deleteExpense).not.toHaveBeenCalled();
+    await userEvent.click(button);
+    expect(window.confirm).toHaveBeenCalledTimes(2);
+    expect(deleteExpense).toHaveBeenCalledTimes(1);
+    expect(deleteExpense).toHaveBeenCalledWith('1', 10);
+    expect(screen.queryByText('My entry')).not.toBeInTheDocument();
 });
