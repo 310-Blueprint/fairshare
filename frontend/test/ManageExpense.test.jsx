@@ -116,10 +116,26 @@ it('AC3: split across a subset of members', async () => {
         amount: '42.50',
         currency: 'NZD',
         description: 'Groceries',
+        category: null,
         paidByUserId: 2,
         expenseDate: '2024-06-15',
         participantUserIds: [1, 2, 3],
     });
+});
+
+it('#16 AC1: shows the saved category and saves a changed one', async () => {
+    getExpense.mockResolvedValue({ expense: {
+        id: 9, amount: '42.50', description: 'Groceries', paidByUserId: 2, expenseDate: '2024-06-15',
+        participantUserIds: [1, 2], originalAmount: '42.50', originalCurrency: 'NZD', category: 'GROCERIES',
+    } });
+    const user = userEvent.setup();
+    renderPage();
+
+    expect(await screen.findByLabelText('Category')).toHaveValue('GROCERIES');
+    await user.selectOptions(screen.getByLabelText('Category'), 'Entertainment');
+    await user.click(screen.getByRole('button', { name: 'Save expense' }));
+
+    expect(updateExpense).toHaveBeenCalledWith('1', '9', expect.objectContaining({ category: 'ENTERTAINMENT' }));
 });
 
 it('AC6: at least one participant must be selected', async () => {
