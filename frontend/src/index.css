@@ -112,6 +112,20 @@ h2 {
     max-width: 760px;
 }
 
+/* A card's title with its main action alongside, e.g. "Your Groups" and "Create group". */
+.card-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
+    margin-bottom: var(--space-6);
+}
+
+.card .card-header h1 {
+    text-align: left;
+}
+
 /* ---- Links ---- */
 
 a {
