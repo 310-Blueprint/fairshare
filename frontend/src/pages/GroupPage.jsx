@@ -4,6 +4,7 @@ import {exportGroup, getGroup, getGroupMembers} from '../api/groups';
 import {getExpenses, deleteExpense} from '../api/expenses';
 import {getRecurringExpenses} from '../api/recurringExpenses';
 import SettlementView from './SettlementView';
+import ExpenseActivity from '../components/ExpenseActivity';
 import {formatExpenseAmount} from '../utils/formatExpenseAmount';
 import './GroupPage.css';
 
@@ -83,6 +84,7 @@ function GroupPage() {
     const [exportError, setExportError] = useState(null);
     const [deleting, setDeleting] = useState(null);
     const [deleteError, setDeleteError] = useState(null);
+    const [activityVersion, setActivityVersion] = useState(0);
 
     // Fetch the group, expenses, and members whenever the route changes so the page stays in sync.
     useEffect(() => {
@@ -141,6 +143,7 @@ function GroupPage() {
                 return;
             }
             setExpenses(previous => previous.filter(item => item.id !== expense.id));
+            setActivityVersion(version => version + 1);
             const memberResult = await getGroupMembers(id);
             if (memberResult.error) {
                 setDeleteError(`Expense deleted, but balances could not refresh: ${memberResult.error}`);
@@ -253,6 +256,8 @@ function GroupPage() {
                         </ul>
                     )}
                 </section>
+
+                <ExpenseActivity groupId={group.id} refreshVersion={activityVersion} />
 
                 <section>
                     <h2>Recurring expenses</h2>

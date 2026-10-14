@@ -77,3 +77,14 @@ export async function deleteExpense(id, expenseId) {
     }
     return {};
 }
+
+export async function getExpenseActivity(id) {
+    const groupId = requirePositiveInteger(id, 'Group ID');
+    const response = await fetch(`${API_BASE}/groups/${groupId}/expenses/activity`, {
+        credentials: 'include'
+    });
+    if (!response.ok) {
+        return { error: await readError(response, 'Could not load expense activity.') };
+    }
+    return { activity: await response.json() };
+}

@@ -83,3 +83,22 @@
     color: #666;
     cursor: default;
 }
+
+.expense-activity-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.expense-activity-list li {
+    padding: 10px 0;
+    border-bottom: 1px solid #f0f0f0;
+    overflow-wrap: anywhere;
+}
+
+.expense-activity-list time {
+    display: block;
+    margin-top: 4px;
+    font-size: 13px;
+    color: #666;
+}

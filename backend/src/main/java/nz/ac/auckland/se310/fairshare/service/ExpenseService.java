@@ -2,6 +2,9 @@ package nz.ac.auckland.se310.fairshare.service;
 
 import nz.ac.auckland.se310.fairshare.dto.CreateExpenseRequest;
 import nz.ac.auckland.se310.fairshare.dto.ExpenseResponse;
+import nz.ac.auckland.se310.fairshare.dto.ExpenseActivityResponse;
+import nz.ac.auckland.se310.fairshare.model.ExpenseAudit;
+import nz.ac.auckland.se310.fairshare.repository.ExpenseAuditRepository;
 import nz.ac.auckland.se310.fairshare.exception.GroupAccessDeniedException;
 import nz.ac.auckland.se310.fairshare.exception.ExpenseAccessDeniedException;
 import nz.ac.auckland.se310.fairshare.exception.ExpenseNotFoundException;
@@ -33,6 +36,7 @@ public class ExpenseService {
     private static final BigDecimal MAX_AMOUNT = new BigDecimal("9999999999999.99");
 
     private final ExpenseRepository expenseRepository;
+    private final ExpenseAuditRepository expenseAuditRepository;
     private final ExpenseGroupRepository groupRepository;
     private final ExpenseShareRepository expenseShareRepository;
     private final CurrencyService currencyService;
@@ -40,8 +44,9 @@ public class ExpenseService {
 
     public ExpenseService(ExpenseRepository expenseRepository, ExpenseGroupRepository groupRepository,
                           ExpenseShareRepository expenseShareRepository, CurrencyService currencyService,
-                          ExchangeRateProvider exchangeRateProvider) {
+                          ExchangeRateProvider exchangeRateProvider, ExpenseAuditRepository expenseAuditRepository) {
         this.expenseRepository = expenseRepository;
+        this.expenseAuditRepository = expenseAuditRepository;
         this.groupRepository = groupRepository;
         this.expenseShareRepository = expenseShareRepository;
         this.currencyService = currencyService;
@@ -126,6 +131,21 @@ public class ExpenseService {
         }
 
         LocalDate expenseDate = request.expenseDate() != null ? request.expenseDate() : expense.getExpenseDate();
+        String currency = request.currency() == null ? group.getBaseCurrency().name()
+                : currencyService.requireSupported(request.currency());
+        List<Long> participantIds = members.stream().map(member -> member.getUser().getId()).toList();
+        List<Long> existingParticipantIds = expenseShareRepository.findByExpenseId(expenseId).stream()
+                .map(share -> share.getUser().getId()).sorted().toList();
+        // Compare the member's inputs before looking up rates or rebuilding shares. A repeated save
+        // must preserve the recorded conversion and must not create a misleading activity entry.
+        if (expense.getOriginalAmount().compareTo(request.amount().setScale(MONEY_SCALE, RoundingMode.HALF_UP)) == 0
+                && expense.getOriginalCurrency().equals(currency)
+                && expense.getDescription().equals(request.description().trim())
+                && expense.getPaidBy().getId().equals(request.paidByUserId())
+                && expense.getExpenseDate().equals(expenseDate)
+                && existingParticipantIds.equals(participantIds)) {
+            return;
+        }
         Conversion conversion = convert(group, request, expenseDate);
 
         // updateSplit reverses the old amount, so the new one is only set on the expense afterwards.
@@ -138,6 +158,8 @@ public class ExpenseService {
         expense.setExpenseDate(expenseDate);
 
         expenseRepository.save(expense);
+        expenseAuditRepository.save(new ExpenseAudit(expense, group.getMember(currentUserId).getUser(),
+                ExpenseAudit.Action.EDITED));
     }
 
     /** Deletes an expense and reverses its contribution to current members' balances atomically. */
@@ -151,6 +173,8 @@ public class ExpenseService {
             throw ExpenseAccessDeniedException.forDelete();
         }
         reverseSplit(expense, group.getMember(expense.getPaidBy().getId()));
+        expenseAuditRepository.save(new ExpenseAudit(expense, group.getMember(currentUserId).getUser(),
+                ExpenseAudit.Action.DELETED));
         expenseRepository.delete(expense);
     }
 
@@ -171,6 +195,17 @@ public class ExpenseService {
         applyEqualSplit(payer, amount, members, saved);
 
         return toResponse(saved);
+    }
+
+    @Transactional(readOnly = true)
+    public List<ExpenseActivityResponse> getExpenseActivity(Long groupId, Long currentUserId) {
+        groupRepository.findByIdAndMembersUserId(groupId, currentUserId)
+                .orElseThrow(GroupAccessDeniedException::new);
+        return expenseAuditRepository.findByGroupIdOrderByChangedAtDescIdDesc(groupId).stream()
+                .map(event -> new ExpenseActivityResponse(event.getId(), event.getExpenseId(),
+                        event.getExpenseDescription(), event.getActorUserId(), event.getActorUsername(),
+                        event.getAction(), event.getChangedAt()))
+                .toList();
     }
 
     @Transactional(readOnly = true)

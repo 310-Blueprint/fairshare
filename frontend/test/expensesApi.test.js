@@ -1,5 +1,5 @@
 import { afterEach, expect, it, vi } from 'vitest';
-import { createExpense, deleteExpense } from '../src/api/expenses';
+import { createExpense, deleteExpense, getExpenseActivity } from '../src/api/expenses';
 
 afterEach(() => {
     vi.unstubAllGlobals();
@@ -54,4 +54,19 @@ it('returns the authorisation error when deletion receives 403', async () => {
     const message = 'Only the creator of this expense can delete it';
     respondWith(403, { error: message });
     expect(await deleteExpense(1, 9)).toEqual({ error: message });
+});
+
+
+it('fetches expense activity with session credentials', async () => {
+    const events = [{ id: 1, action: 'DELETED', actorUsername: 'alice' }];
+    const fetchMock = respondWith(200, events);
+    expect(await getExpenseActivity(1)).toEqual({ activity: events });
+    expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('/groups/1/expenses/activity'), {
+        credentials: 'include',
+    });
+});
+
+it('returns the activity authorisation error for a non-member', async () => {
+    respondWith(403, { error: 'You must be a group member' });
+    expect(await getExpenseActivity(1)).toEqual({ error: 'You must be a group member' });
 });

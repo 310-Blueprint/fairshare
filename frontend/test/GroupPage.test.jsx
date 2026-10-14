@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import GroupPage from '../src/pages/GroupPage.jsx';
 import { exportGroup, getGroup, getGroupBalances, getGroupMembers } from '../src/api/groups';
-import { getExpenses, deleteExpense } from '../src/api/expenses';
+import { getExpenses, deleteExpense, getExpenseActivity } from '../src/api/expenses';
 import { getRecurringExpenses } from '../src/api/recurringExpenses';
 
 vi.mock('../src/api/groups', () => ({
@@ -20,6 +20,7 @@ vi.mock('../src/api/groups', () => ({
 vi.mock('../src/api/expenses', () => ({
     getExpenses: vi.fn(),
     deleteExpense: vi.fn(),
+    getExpenseActivity: vi.fn(),
 }));
 
 vi.mock('../src/api/recurringExpenses', () => ({
@@ -40,6 +41,7 @@ beforeEach(() => {
     vi.spyOn(window, 'confirm').mockReturnValue(true);
     getGroup.mockResolvedValue(GROUP);
     getExpenses.mockResolvedValue({ expenses: [] });
+    getExpenseActivity.mockResolvedValue({ activity: [] });
     getRecurringExpenses.mockResolvedValue({ recurringExpenses: [] });
     getGroupBalances.mockResolvedValue([]);
     getGroupMembers.mockResolvedValue({
@@ -339,4 +341,28 @@ it('AC3: cancelling then explicitly confirming sends only one deletion request',
     expect(deleteExpense).toHaveBeenCalledTimes(1);
     expect(deleteExpense).toHaveBeenCalledWith('1', 10);
     expect(screen.queryByText('My entry')).not.toBeInTheDocument();
+});
+
+
+it('refreshes group activity after confirmed deletion', async () => {
+    mockOwnedAndOtherExpenses();
+    deleteExpense.mockResolvedValue({});
+    renderPage();
+    expect(await screen.findByText('No expense edits or deletions yet.')).toBeInTheDocument();
+    getExpenseActivity.mockResolvedValue({ activity: [{
+        id: 1, expenseId: 10, expenseDescription: 'My entry', actorUsername: 'alice',
+        action: 'DELETED', changedAt: '2026-10-14T08:00:00Z',
+    }] });
+    await userEvent.click(screen.getByRole('button', { name: 'Delete My entry' }));
+    expect(await screen.findByText('alice deleted expense "My entry" (#10)')).toBeInTheDocument();
+    expect(screen.queryByText('My entry')).not.toBeInTheDocument();
+});
+
+it('an activity loading error leaves the group history visible', async () => {
+    mockOwnedAndOtherExpenses();
+    getExpenseActivity.mockResolvedValue({ error: 'Activity unavailable' });
+    renderPage();
+    expect(await screen.findByText('Activity unavailable')).toBeInTheDocument();
+    expect(screen.getByText('My entry')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Edit' })).toBeInTheDocument();
 });

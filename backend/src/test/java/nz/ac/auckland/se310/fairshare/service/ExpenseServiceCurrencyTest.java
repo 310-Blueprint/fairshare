@@ -10,6 +10,7 @@ import nz.ac.auckland.se310.fairshare.model.ExpenseGroup;
 import nz.ac.auckland.se310.fairshare.model.User;
 import nz.ac.auckland.se310.fairshare.repository.ExpenseGroupRepository;
 import nz.ac.auckland.se310.fairshare.repository.ExpenseRepository;
+import nz.ac.auckland.se310.fairshare.repository.ExpenseAuditRepository;
 import nz.ac.auckland.se310.fairshare.repository.ExpenseShareRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -44,6 +45,7 @@ class ExpenseServiceCurrencyTest {
     private static final LocalDate EXPENSE_DATE = LocalDate.of(2026, Month.AUGUST, 1);
     private static final BigDecimal USD_TO_NZD = new BigDecimal("1.7056");
 
+    private final ExpenseAuditRepository expenseAuditRepository = mock(ExpenseAuditRepository.class);
     private final ExpenseRepository expenseRepository = mock(ExpenseRepository.class);
     private final ExpenseGroupRepository groupRepository = mock(ExpenseGroupRepository.class);
     private final ExpenseShareRepository expenseShareRepository = mock(ExpenseShareRepository.class);
@@ -68,7 +70,7 @@ class ExpenseServiceCurrencyTest {
             return from.equals(to) ? BigDecimal.ONE : USD_TO_NZD;
         };
         expenseService = new ExpenseService(expenseRepository, groupRepository, expenseShareRepository,
-                new CurrencyService(), stubRates);
+                new CurrencyService(), stubRates, expenseAuditRepository);
     }
 
     @Test
@@ -185,7 +187,7 @@ class ExpenseServiceCurrencyTest {
     @Test
     void amountWorthLessThanACentOnceConvertedIsRejected() {
         ExpenseService tinyRates = new ExpenseService(expenseRepository, groupRepository, expenseShareRepository,
-                new CurrencyService(), (from, to, date) -> new BigDecimal("0.0001"));
+                new CurrencyService(), (from, to, date) -> new BigDecimal("0.0001"), expenseAuditRepository);
         CreateExpenseRequest request = request("10.00", "IDR");
 
         assertThatThrownBy(() -> tinyRates.createExpense(GROUP_ID, request, ALICE))
@@ -222,7 +224,7 @@ class ExpenseServiceCurrencyTest {
         krwGroup.addMember(group.getMember(BOB).getUser());
         when(groupRepository.findByIdAndMembersUserId(GROUP_ID, ALICE)).thenReturn(Optional.of(krwGroup));
         return new ExpenseService(expenseRepository, groupRepository, expenseShareRepository,
-                new CurrencyService(), (from, to, date) -> from.equals(to) ? BigDecimal.ONE : new BigDecimal("1350"));
+                new CurrencyService(), (from, to, date) -> from.equals(to) ? BigDecimal.ONE : new BigDecimal("1350"), expenseAuditRepository);
     }
 
     private CreateExpenseRequest request(String amount, String currency) {

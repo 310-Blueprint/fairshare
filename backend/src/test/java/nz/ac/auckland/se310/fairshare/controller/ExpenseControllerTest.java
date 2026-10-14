@@ -11,6 +11,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -47,5 +48,30 @@ class ExpenseControllerTest {
         mvc.perform(delete("/groups/1/expenses/9"))
                 .andExpect(status().isNoContent()).andExpect(content().string(""));
         verify(service).deleteExpense(1L, 9L, 1L);
+    }
+    @Test
+    void activityEndpointReturnsActorActionAndTimestampForMembers() throws Exception {
+        ExpenseService service = mock(ExpenseService.class);
+        var timestamp = java.time.Instant.parse("2026-10-14T08:00:00Z");
+        when(service.getExpenseActivity(1L, 2L)).thenReturn(java.util.List.of(
+                new nz.ac.auckland.se310.fairshare.dto.ExpenseActivityResponse(1L, 9L, "Dinner", 1L,
+                        "alice", nz.ac.auckland.se310.fairshare.model.ExpenseAudit.Action.DELETED, timestamp)));
+        var mvc = MockMvcBuilders.standaloneSetup(new ExpenseController(service, () -> 2L))
+                .setControllerAdvice(new GlobalExceptionHandler()).build();
+        mvc.perform(get("/groups/1/expenses/activity"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].actorUsername").value("alice"))
+                .andExpect(jsonPath("$[0].action").value("DELETED"))
+                .andExpect(jsonPath("$[0].changedAt").value("2026-10-14T08:00:00Z"));
+    }
+
+    @Test
+    void nonMembersCannotReadActivity() throws Exception {
+        ExpenseService service = mock(ExpenseService.class);
+        when(service.getExpenseActivity(1L, 3L)).thenThrow(
+                new nz.ac.auckland.se310.fairshare.exception.GroupAccessDeniedException());
+        var mvc = MockMvcBuilders.standaloneSetup(new ExpenseController(service, () -> 3L))
+                .setControllerAdvice(new GlobalExceptionHandler()).build();
+        mvc.perform(get("/groups/1/expenses/activity")).andExpect(status().isForbidden());
     }
 }

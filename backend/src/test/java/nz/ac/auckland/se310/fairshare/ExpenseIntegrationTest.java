@@ -60,6 +60,8 @@ class ExpenseIntegrationTest {
     @Autowired ExpenseService expenseService;
     @Autowired ExpenseGroupRepository groupRepository;
     @Autowired ExpenseRepository expenseRepository;
+    @org.springframework.test.context.bean.override.mockito.MockitoSpyBean
+    nz.ac.auckland.se310.fairshare.repository.ExpenseAuditRepository expenseAuditRepository;
     @Autowired ExpenseShareRepository expenseShareRepository;
     @Autowired SettlementRepository settlementRepository;
     @Autowired UserRepository userRepository;
@@ -300,6 +302,108 @@ class ExpenseIntegrationTest {
         assertThat(violations(request))
                 .extractingByKey("participantUserIds", list(String.class))
                 .containsExactly("At least one participant is required");
+    }
+
+    @Test
+    void historyAc4_activityRecordsEveryEditAndSurvivesDeletionForOtherMembers() {
+        var created = expenseService.createExpense(groupId, new CreateExpenseRequest(
+                new BigDecimal("40.00"), "Dinner", bobId, List.of(aliceId, bobId), null), aliceId);
+        var start = java.time.Instant.now().minusSeconds(1);
+        var update = new CreateExpenseRequest(new BigDecimal("30.00"), "Corrected dinner", bobId,
+                List.of(aliceId, bobId), null);
+        expenseService.updateExpense(groupId, update, aliceId, created.id());
+        expenseService.updateExpense(groupId, new CreateExpenseRequest(new BigDecimal("31.00"),
+                "Corrected dinner", bobId, List.of(aliceId, bobId), null), aliceId, created.id());
+        expenseService.deleteExpense(groupId, created.id(), aliceId);
+        var events = expenseService.getExpenseActivity(groupId, bobId);
+        assertThat(events).hasSize(3);
+        assertThat(events).extracting(event -> event.action().name())
+                .containsExactly("DELETED", "EDITED", "EDITED");
+        assertThat(events).allSatisfy(event -> {
+            assertThat(event.actorUserId()).isEqualTo(aliceId);
+            assertThat(event.actorUsername()).isEqualTo("alice");
+            assertThat(event.expenseId()).isEqualTo(created.id());
+            assertThat(event.expenseDescription()).isEqualTo("Corrected dinner");
+            assertThat(event.changedAt()).isBetween(start, java.time.Instant.now().plusSeconds(1));
+        });
+        assertThat(expenseRepository.existsById(created.id())).isFalse();
+        var otherGroup = groupService.createGroup(new CreateGroupRequest("Other", null), aliceId).id();
+        assertThat(expenseService.getExpenseActivity(otherGroup, aliceId)).isEmpty();
+        assertThatThrownBy(() -> expenseService.getExpenseActivity(groupId, carolId))
+                .isInstanceOf(GroupAccessDeniedException.class);
+    }
+
+    @Test
+    void historyAc4_unchangedSavePreservesSharesBalancesAndActivity() {
+        var created = expenseService.createExpense(groupId, new CreateExpenseRequest(
+                new BigDecimal("40.00"), "Dinner", bobId, List.of(aliceId, bobId), null), aliceId);
+        var original = expenseService.getExpense(groupId, created.id(), aliceId);
+        var before = balances();
+        var shareIds = expenseShareRepository.findByExpenseId(created.id()).stream()
+                .map(share -> share.getId()).toList();
+        expenseService.updateExpense(groupId, new CreateExpenseRequest(new BigDecimal("40.000"),
+                " Dinner ", bobId, List.of(bobId, aliceId, bobId), original.expenseDate(), " nzd "),
+                aliceId, created.id());
+        assertThat(expenseService.getExpense(groupId, created.id(), aliceId)).isEqualTo(original);
+        assertThat(balances()).isEqualTo(before);
+        assertThat(expenseShareRepository.findByExpenseId(created.id()))
+                .extracting(share -> share.getId()).containsExactlyElementsOf(shareIds);
+        assertThat(expenseService.getExpenseActivity(groupId, aliceId)).isEmpty();
+    }
+
+    @Test
+    void historyAc4_unchangedForeignSaveDoesNotLookUpRatesOrChangeRecordedConversion() {
+        var created = expenseService.createExpense(groupId, new CreateExpenseRequest(
+                new BigDecimal("20.00"), "Dinner", bobId, List.of(aliceId, bobId), null, "USD"), aliceId);
+        var original = expenseService.getExpense(groupId, created.id(), aliceId);
+        exchangeRates.reset(); // A lookup would now fail; unchanged inputs need no rate lookup.
+        expenseService.updateExpense(groupId, new CreateExpenseRequest(new BigDecimal("20.00"),
+                "Dinner", bobId, List.of(aliceId, bobId), original.expenseDate(), "USD"), aliceId, created.id());
+        assertThat(expenseService.getExpense(groupId, created.id(), aliceId)).isEqualTo(original);
+        assertThat(expenseService.getExpenseActivity(groupId, aliceId)).isEmpty();
+        // A genuine description-only change still creates an edit event.
+        exchangeRates.setRate("USD", "NZD", "1.7056");
+        expenseService.updateExpense(groupId, new CreateExpenseRequest(new BigDecimal("20.00"),
+                "Dinner corrected", bobId, List.of(aliceId, bobId), original.expenseDate(), "USD"), aliceId, created.id());
+        assertThat(expenseService.getExpenseActivity(groupId, aliceId)).hasSize(1);
+    }
+
+    @Test
+    void historyAc4_rejectedChangesDoNotProduceAuditEvents() {
+        var created = expenseService.createExpense(groupId, new CreateExpenseRequest(
+                new BigDecimal("40.00"), "Dinner", bobId, List.of(aliceId, bobId), null), aliceId);
+        var update = new CreateExpenseRequest(new BigDecimal("99.00"), "Invalid edit", bobId,
+                List.of(aliceId, bobId), null);
+        assertThatThrownBy(() -> expenseService.updateExpense(groupId, update, bobId, created.id()))
+                .isInstanceOf(nz.ac.auckland.se310.fairshare.exception.ExpenseAccessDeniedException.class);
+        assertThatThrownBy(() -> expenseService.deleteExpense(groupId, created.id(), bobId))
+                .isInstanceOf(nz.ac.auckland.se310.fairshare.exception.ExpenseAccessDeniedException.class);
+        assertThat(expenseService.getExpenseActivity(groupId, aliceId)).isEmpty();
+    }
+
+    @Test
+    void historyAc4_auditFailureRollsBackEditAndDeletionIncludingBalancesAndShares() {
+        var created = expenseService.createExpense(groupId, new CreateExpenseRequest(
+                new BigDecimal("40.00"), "Dinner", bobId, List.of(aliceId, bobId), null), aliceId);
+        var original = expenseService.getExpense(groupId, created.id(), aliceId);
+        var before = balances();
+        org.mockito.Mockito.doThrow(new IllegalStateException("Audit storage unavailable"))
+                .when(expenseAuditRepository).save(org.mockito.ArgumentMatchers.any(
+                        nz.ac.auckland.se310.fairshare.model.ExpenseAudit.class));
+        var update = new CreateExpenseRequest(new BigDecimal("99.00"), "Changed", aliceId,
+                List.of(aliceId), null);
+        assertThatThrownBy(() -> expenseService.updateExpense(groupId, update, aliceId, created.id()))
+                .isInstanceOf(IllegalStateException.class);
+        assertThat(expenseService.getExpense(groupId, created.id(), aliceId)).isEqualTo(original);
+        assertThat(balances()).isEqualTo(before);
+        assertThatThrownBy(() -> expenseService.deleteExpense(groupId, created.id(), aliceId))
+                .isInstanceOf(IllegalStateException.class);
+        assertThat(expenseService.getExpense(groupId, created.id(), aliceId)).isEqualTo(original);
+        assertThat(balances()).isEqualTo(before);
+        assertThat(expenseShareRepository.findByExpenseId(created.id()))
+                .extracting(share -> share.getShareAmount()).containsExactlyInAnyOrder(
+                        new BigDecimal("20.00"), new BigDecimal("20.00"));
+        assertThat(expenseService.getExpenseActivity(groupId, aliceId)).isEmpty();
     }
 
     @Test
