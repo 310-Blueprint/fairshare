@@ -182,7 +182,7 @@ function UserManagement() {
           {message && <div className="success">{message}</div>}
 
           <button type="submit">Save Changes</button>
-          <button type="button" onClick={handleLogout} className="secondary-button">
+          <button type="button" onClick={handleLogout} className="button-secondary">
             Log Out
           </button>
         </form>

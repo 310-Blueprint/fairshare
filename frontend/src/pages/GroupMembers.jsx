@@ -124,13 +124,13 @@ function GroupMembers() {
                         <li key={member.userId}>
                             <div>
                                 <strong>{member.username}</strong>
-                                {member.currentUser && <span className="you-label">You</span>}
+                                {member.currentUser && <span className="badge">You</span>}
                                 <span>{member.email}</span>
                                 <span>Net balance: {Number(member.netBalance).toFixed(2)}</span>
                             </div>
                             <button
                                 type="button"
-                                className="remove-button"
+                                className="button-danger button-small"
                                 onClick={() => openRemovalConfirmation(member)}
                             >
                                 {member.currentUser ? 'Leave group' : 'Remove'}
@@ -164,7 +164,7 @@ function GroupMembers() {
                         <div className="confirmation-actions">
                             <button
                                 type="button"
-                                className="cancel-button"
+                                className="button-secondary"
                                 disabled={removing}
                                 onClick={() => {
                                     setError(null);
@@ -175,7 +175,7 @@ function GroupMembers() {
                             </button>
                             <button
                                 type="button"
-                                className="confirm-remove-button"
+                                className="button-danger"
                                 disabled={removing}
                                 onClick={handleRemove}
                             >

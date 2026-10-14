@@ -4,7 +4,6 @@ import { getGroupMembers } from '../api/groups';
 import { getExpense, updateExpense } from '../api/expenses';
 import { getCurrencies } from '../api/currencies';
 import ExpenseForm from '../components/ExpenseForm';
-import './ManageExpense.css';
 
 function EditExpense() {
     const { id, expenseId } = useParams();

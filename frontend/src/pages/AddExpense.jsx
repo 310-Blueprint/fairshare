@@ -7,7 +7,6 @@ import ExpenseForm from '../components/ExpenseForm';
 import { today } from '../utils/dates';
 import { validateSharedExpenseFields } from '../utils/expenseValidation';
 import { useGroupMembersForm } from '../utils/useGroupMembersForm';
-import './AddExpense.css';
 
 function validate({ amount, currency, currencies, description, paidByUserId, expenseDate, participantUserIds }) {
     const errors = validateSharedExpenseFields({ amount, description, paidByUserId, participantUserIds });

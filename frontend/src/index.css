@@ -107,30 +107,62 @@ h2 {
     margin-bottom: var(--space-6);
 }
 
+/* Wider card for screens with lists or tables, e.g. a group or its members. */
+.card-wide {
+    max-width: 760px;
+}
+
+/* ---- Links ---- */
+
+a {
+    color: var(--accent);
+}
+
+.card a {
+    color: var(--success);
+    font-weight: 500;
+    text-underline-offset: 3px;
+}
+
+/* ---- Forms (AC4) ---- */
+
 .form-group {
     display: flex;
     flex-direction: column;
-    margin-bottom: 20px;
+    margin-bottom: var(--space-5);
 }
 
 .form-group label {
-    margin-bottom: 6px;
-    font-weight: bold;
+    margin-bottom: var(--space-2);
+    font-weight: 500;
 }
 
-.form-group input,
-.form-group select {
-    padding: 10px;
-    font-size: 16px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    background-color: white;
+input:not([type="checkbox"]):not([type="radio"]),
+select,
+textarea {
+    width: 100%;
+    padding: var(--space-3) var(--space-4);
+    font: inherit;
+    color: var(--text);
+    background-color: #fff;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-input);
+    transition: border-color 0.15s, box-shadow 0.15s;
 }
 
-.form-group input:focus,
-.form-group select:focus {
+input:not([type="checkbox"]):not([type="radio"]):focus,
+select:focus,
+textarea:focus {
     outline: none;
-    border-color: #555;
+    border-color: var(--accent-strong);
+    box-shadow: 0 0 0 3px rgba(102, 205, 164, 0.35);
+}
+
+input[type="checkbox"],
+input[type="radio"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--success);
 }
 
 .error {
@@ -145,14 +177,127 @@ h2 {
     margin: var(--space-5) 0;
 }
 
-button {
-    width: 100%;
-    padding: 12px;
-    margin-top: 10px;
-    font-size: 16px;
-    border: none;
-    border-radius: 5px;
+/* ---- Buttons (AC4) ----
+   Every button, and any link styled as one with .button, is a green pill by default.
+   .button-secondary and .button-danger are the only variants; .button-small is for rows. */
+
+button,
+.button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    min-height: 48px;
+    padding: var(--space-3) var(--space-6);
+    font: inherit;
+    font-weight: 500;
+    line-height: 1.2;
+    color: var(--text);
+    background-color: var(--accent);
+    border: 1px solid transparent;
+    border-radius: var(--radius-pill);
+    text-decoration: none;
     cursor: pointer;
+    transition: background-color 0.15s, border-color 0.15s;
+}
+
+.card .button {
+    color: var(--text);
+}
+
+button:hover,
+.button:hover {
+    background-color: var(--accent-hover);
+}
+
+button:focus-visible,
+.button:focus-visible,
+a:focus-visible {
+    outline: 3px solid var(--accent-strong);
+    outline-offset: 2px;
+}
+
+button:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.button-secondary,
+.card .button-secondary {
+    color: var(--text);
+    background-color: transparent;
+    border-color: var(--text);
+}
+
+.button-secondary:hover {
+    background-color: var(--surface-muted);
+}
+
+.button-danger {
+    color: var(--danger);
+    background-color: var(--danger-surface);
+}
+
+.button-danger:hover {
+    background-color: #f9d6d2;
+}
+
+.button-small {
+    min-height: 36px;
+    padding: var(--space-1) var(--space-4);
+    font-size: 14px;
+}
+
+/* A form's submit button spans the form, as before the redesign. */
+form button[type="submit"] {
+    width: 100%;
+    margin-top: var(--space-2);
+}
+
+/* ---- Badges ---- */
+
+.badge {
+    display: inline-block;
+    width: fit-content;
+    padding: 2px var(--space-2);
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--success);
+    background-color: var(--success-surface);
+    border-radius: var(--radius-pill);
+}
+
+/* ---- Confirmation dialog, shared by every "are you sure" prompt ---- */
+
+.confirmation-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-4);
+    background: rgba(0, 0, 0, 0.6);
+}
+
+.confirmation-dialog {
+    width: min(420px, 100%);
+    padding: var(--space-6);
+    color: var(--text);
+    background: var(--surface);
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-card);
+}
+
+.confirmation-dialog h2 {
+    margin-top: 0;
+}
+
+.confirmation-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--space-3);
+    margin-top: var(--space-5);
 }
 
 .logo {

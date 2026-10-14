@@ -5,7 +5,6 @@ import RecurringExpenseForm from '../components/RecurringExpenseForm';
 import { today } from '../utils/dates';
 import { validateSharedExpenseFields } from '../utils/expenseValidation';
 import { useGroupMembersForm } from '../utils/useGroupMembersForm';
-import './AddExpense.css';
 
 // Generation splits into whole cents, so a fractional cent (e.g. 10.005) can't be split exactly.
 function hasMoreThanTwoDecimalPlaces(amount) {

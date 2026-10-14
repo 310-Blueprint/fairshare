@@ -113,7 +113,7 @@ function IndividualDebtBalance() {
                                 {entry.payerUserId !== Number(otherUserId) && (
                                     <>
                                         {' '}
-                                        <button type="button" onClick={() => setEntryToDelete(entry)}>Delete</button>
+                                        <button type="button" className="button-danger button-small" onClick={() => setEntryToDelete(entry)}>Delete</button>
                                     </>
                                 )}
                             </li>
@@ -136,10 +136,10 @@ function IndividualDebtBalance() {
                         <p>{entryLine(entryToDelete)} - {entryToDelete.description}. This cannot be undone.</p>
                         {deleteError && <p className="error" role="alert">{deleteError}</p>}
                         <div className="confirmation-actions">
-                            <button type="button" className="cancel-button" disabled={deleting} onClick={closeDeleteConfirmation}>
+                            <button type="button" className="button-secondary" disabled={deleting} onClick={closeDeleteConfirmation}>
                                 Cancel
                             </button>
-                            <button type="button" className="confirm-remove-button" disabled={deleting} onClick={() => void handleDelete()}>
+                            <button type="button" className="button-danger" disabled={deleting} onClick={() => void handleDelete()}>
                                 {deleting ? 'Deleting...' : 'Delete'}
                             </button>
                         </div>
