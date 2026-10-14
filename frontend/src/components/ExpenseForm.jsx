@@ -1,10 +1,11 @@
-import { AmountField, CurrencyField, DescriptionField, PayerSelect, ParticipantsChecklist, FieldError } from './ExpenseFormFields';
+import { AmountField, CategoryField, CurrencyField, DescriptionField, PayerSelect, ParticipantsChecklist, FieldError } from './ExpenseFormFields';
 
 function ExpenseForm({
     amount,
     currency,
     currencies,
     description,
+    category,
     paidByUserId,
     expenseDate,
     participantUserIds,
@@ -14,6 +15,7 @@ function ExpenseForm({
     onAmountChange,
     onCurrencyChange,
     onDescriptionChange,
+    onCategoryChange,
     onPaidByUserIdChange,
     onExpenseDateChange,
     onParticipantUserIdsChange,
@@ -32,6 +34,8 @@ function ExpenseForm({
                 error={errors.description}
                 placeholder="What was it for?"
             />
+
+            <CategoryField value={category} onChange={onCategoryChange} error={errors.category} />
 
             <PayerSelect
                 value={paidByUserId}

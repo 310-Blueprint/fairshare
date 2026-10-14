@@ -1,3 +1,5 @@
+import { EXPENSE_CATEGORIES } from '../utils/expenseCategories';
+
 // Field groups shared by ExpenseForm and RecurringExpenseForm, which collect the same
 // amount/description/payer/participants details for a one-off and a recurring expense.
 
@@ -55,6 +57,26 @@ export function DescriptionField({ value, onChange, error, placeholder }) {
                 placeholder={placeholder}
                 onChange={(event) => onChange(event.target.value)}
             />
+            <FieldError message={error} />
+        </div>
+    );
+}
+
+// #16 AC1: optional, so the spending overview can break spending down by category.
+export function CategoryField({ value, onChange, error }) {
+    return (
+        <div className="form-group">
+            <label htmlFor="category">Category</label>
+            <select
+                id="category"
+                value={value}
+                onChange={(event) => onChange(event.target.value)}
+            >
+                <option value="">No category</option>
+                {EXPENSE_CATEGORIES.map((option) => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
+            </select>
             <FieldError message={error} />
         </div>
     );
