@@ -105,7 +105,7 @@ function AddExpense() {
 
     return (
         <div className="page">
-            <div className="card">
+            <div className="card card-form">
                 <h1>Add an expense</h1>
                 <p className="subtitle">Split equally among selected members</p>
 
@@ -130,7 +130,9 @@ function AddExpense() {
                     maxExpenseDate={today()}
                 />
 
-                <Link to={`/groups/${id}`}>Back to the group</Link>
+                <p className="card-footer">
+                    <Link to={`/groups/${id}`}>Back to the group</Link>
+                </p>
             </div>
         </div>
     );

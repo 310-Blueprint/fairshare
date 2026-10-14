@@ -107,6 +107,11 @@ h2 {
     margin-bottom: var(--space-6);
 }
 
+/* A form or short list that needs more room than a login card, e.g. adding an expense. */
+.card-form {
+    max-width: 600px;
+}
+
 /* Wider card for screens with lists or tables, e.g. a group or its members. */
 .card-wide {
     max-width: 760px;
@@ -150,6 +155,76 @@ h2 {
 
 .section-header h2 {
     margin: 0;
+}
+
+/* ---- Lists of expenses and balances, shared by the group and balance screens ---- */
+
+.expense-list,
+.balance-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.expense-list li {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 2px var(--space-4);
+    padding: var(--space-3) 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.expense-list li:last-child {
+    border-bottom: none;
+}
+
+.expense-description {
+    grid-column: 1;
+    font-weight: 500;
+}
+
+.expense-meta {
+    grid-column: 1;
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+.expense-amount {
+    grid-row: 1 / span 2;
+    grid-column: 2;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.balance {
+    color: var(--text);
+}
+
+.balance-list li {
+    padding: var(--space-2) 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.balance-list li:last-child {
+    border-bottom: none;
+}
+
+/* A balance's direction: owed to the member, owed by them, or settled. */
+.balance-Positive {
+    color: var(--success);
+    font-size: 1.25rem;
+    font-weight: 500;
+}
+
+.balance-Negative {
+    color: var(--danger);
+    font-size: 1.25rem;
+    font-weight: 500;
+}
+
+.balance-Neutral {
+    color: var(--text-muted);
 }
 
 /* ---- Links ---- */
@@ -196,6 +271,54 @@ textarea:focus {
     outline: none;
     border-color: var(--accent-strong);
     box-shadow: 0 0 0 3px rgba(102, 205, 164, 0.35);
+}
+
+/* Two related fields side by side, e.g. amount and currency. */
+.form-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0 var(--space-4);
+}
+
+/* Amount needs less room than a currency name such as "NZD — New Zealand Dollar". */
+.form-row-amount {
+    grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+}
+
+/* Participants are toggle chips: each checkbox sits in a pill that turns green when picked. */
+.select-participants {
+    margin-bottom: var(--space-5);
+}
+
+.select-participants > p {
+    margin: 0 0 var(--space-2);
+    font-weight: 500;
+}
+
+.select-participants ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.select-participants label {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-4);
+    background-color: #fff;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-pill);
+    cursor: pointer;
+    transition: border-color 0.15s, background-color 0.15s;
+}
+
+.select-participants label:has(input:checked) {
+    background-color: var(--success-surface);
+    border-color: var(--accent);
 }
 
 /* Replaces the browser's own select arrow so selects line up with text inputs. */

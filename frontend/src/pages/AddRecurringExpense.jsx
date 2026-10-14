@@ -88,7 +88,7 @@ function AddRecurringExpense() {
 
     return (
         <div className="page">
-            <div className="card">
+            <div className="card card-form">
                 <h1>Add a recurring expense</h1>
                 <p className="subtitle">Automatically split on a schedule</p>
 
@@ -113,7 +113,9 @@ function AddRecurringExpense() {
                     onSubmit={handleSubmit}
                 />
 
-                <Link to={`/groups/${id}`}>Back to the group</Link>
+                <p className="card-footer">
+                    <Link to={`/groups/${id}`}>Back to the group</Link>
+                </p>
             </div>
         </div>
     );

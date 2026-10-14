@@ -22,9 +22,11 @@ function ExpenseForm({
 }) {
     return (
         <form onSubmit={onSubmit} noValidate>
-            <AmountField value={amount} onChange={onAmountChange} error={errors.amount} />
+            <div className="form-row form-row-amount">
+                <AmountField value={amount} onChange={onAmountChange} error={errors.amount} />
 
-            <CurrencyField value={currency} currencies={currencies} onChange={onCurrencyChange} error={errors.currency} />
+                <CurrencyField value={currency} currencies={currencies} onChange={onCurrencyChange} error={errors.currency} />
+            </div>
 
             <DescriptionField
                 value={description}
@@ -33,6 +35,7 @@ function ExpenseForm({
                 placeholder="What was it for?"
             />
 
+            <div className="form-row">
             <PayerSelect
                 value={paidByUserId}
                 members={members}
@@ -50,6 +53,7 @@ function ExpenseForm({
                     onChange={(event) => onExpenseDateChange(event.target.value)}
                 />
                 <FieldError message={errors.expenseDate} />
+            </div>
             </div>
 
             <ParticipantsChecklist

@@ -95,7 +95,7 @@ function GroupMembers() {
 
     return (
         <div className="page">
-            <div className="card members-card">
+            <div className="card card-form">
                 <h1>Manage Members</h1>
                 <p className="subtitle">Add a registered user by email or username</p>
 
@@ -139,7 +139,9 @@ function GroupMembers() {
                     ))}
                 </ul>
 
-                <Link to={`/groups/${id}`}>Back to group</Link>
+                <p className="card-footer">
+                    <Link to={`/groups/${id}`}>Back to group</Link>
+                </p>
             </div>
 
             {memberToRemove && (

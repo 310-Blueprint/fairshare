@@ -1,11 +1,7 @@
-.balance-card {
-    width: min(620px, calc(100vw - 32px));
-}
-
 .detailed-balance-list {
     list-style: none;
     padding: 0;
-    margin: 28px 0;
+    margin: var(--space-5) 0;
 }
 
 .detailed-balance-list li {
@@ -13,20 +9,15 @@
     align-items: center;
     justify-content: space-between;
     gap: 18px;
-    padding: 16px 0;
-    border-bottom: 1px solid #eee;
+    padding: var(--space-4) 0;
+    border-bottom: 1px solid var(--border);
 }
 
 .balance-member {
     display: flex;
     align-items: center;
-    gap: 8px;
-    font-weight: 600;
-}
-
-.balance-Neutral {
-    color: #666;
-    font-size: 15px;
+    gap: var(--space-2);
+    font-weight: 500;
 }
 
 @media (max-width: 520px) {

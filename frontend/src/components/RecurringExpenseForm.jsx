@@ -37,6 +37,7 @@ function RecurringExpenseForm({
                 placeholder="What is it for?"
             />
 
+            <div className="form-row">
             <PayerSelect
                 value={paidByUserId}
                 members={members}
@@ -60,7 +61,9 @@ function RecurringExpenseForm({
                 </select>
                 <FieldError message={errors.frequency} />
             </div>
+            </div>
 
+            <div className="form-row">
             <div className="form-group">
                 <label htmlFor="startDate">Start date</label>
                 <input
@@ -81,6 +84,7 @@ function RecurringExpenseForm({
                     onChange={(event) => onEndDateChange(event.target.value)}
                 />
                 <FieldError message={errors.endDate} />
+            </div>
             </div>
 
             <ParticipantsChecklist

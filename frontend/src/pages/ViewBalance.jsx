@@ -68,9 +68,11 @@ function ViewBalance() {
     if (error) {
         return (
             <div className="page">
-                <div className="card balance-card">
+                <div className="card card-form balance-card">
                     <p className="error">{error}</p>
-                    <Link to={`/groups/${id}`}>Back to group</Link>
+                    <p className="card-footer">
+                        <Link to={`/groups/${id}`}>Back to group</Link>
+                    </p>
                 </div>
             </div>
         );
@@ -81,7 +83,7 @@ function ViewBalance() {
 
     return (
         <div className="page">
-            <div className="card balance-card">
+            <div className="card card-form balance-card">
                 <h1>Balances</h1>
                 <p className="subtitle">{group.name}</p>
                 
@@ -100,7 +102,9 @@ function ViewBalance() {
                     </ul>
                 
 
-                <Link to={`/groups/${id}`}>Back to group</Link>
+                <p className="card-footer">
+                    <Link to={`/groups/${id}`}>Back to group</Link>
+                </p>
             </div>
         </div>
     );
