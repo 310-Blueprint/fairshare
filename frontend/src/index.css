@@ -101,6 +101,11 @@ h2 {
     text-align: center;
 }
 
+/* A form straight after a card's title, with no subtitle between, still needs room. */
+.card h1 + form {
+    margin-top: var(--space-6);
+}
+
 .subtitle {
     text-align: center;
     color: var(--text-muted);

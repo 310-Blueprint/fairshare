@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { getBalancesOverview } from '../api/individualDebts';
 import { money } from '../utils/formatExpenseAmount';
+import './IndividualDebts.css';
 
 function balanceLine(balance) {
     if (balance.settled) {
@@ -40,9 +41,13 @@ function IndividualDebts() {
 
     return (
         <div className="page">
-            <div className="card">
-                <h1>Individual Debts</h1>
-                <p className="subtitle">What you and each person owe each other, combined</p>
+            <div className="card card-form">
+                {/* #83: title and main action share a row, as on the groups overview */}
+                <div className="card-header debts-header">
+                    <h1>Individual Debts</h1>
+                    <Link to="/debts/new" className="button">Record a debt</Link>
+                </div>
+                <p className="debts-intro">What you and each person owe each other, combined</p>
 
                 {error && <span className="error">{error}</span>}
 
@@ -53,14 +58,12 @@ function IndividualDebts() {
                 <ul className="debt-list">
                     {balances.map((balance) => (
                         <li key={balance.counterpartyUserId}>
-                            <Link to={`/debts/${balance.counterpartyUserId}`}>
+                            <Link to={`/debts/${balance.counterpartyUserId}`} className="debt-row">
                                 {balanceLine(balance)}
                             </Link>
                         </li>
                     ))}
                 </ul>
-
-                <Link to="/debts/new" className="create-link">Record a debt</Link>
             </div>
         </div>
     );

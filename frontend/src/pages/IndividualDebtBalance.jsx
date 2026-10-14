@@ -3,7 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { deleteIndividualDebt, getBalanceWithUser } from '../api/individualDebts';
 import { money } from '../utils/formatExpenseAmount';
 // Shares the confirmation dialog styles with the group members page.
-import './GroupMembers.css';
+import './IndividualDebts.css';
 
 function netLine(balance) {
     if (balance.settled) {
@@ -78,7 +78,9 @@ function IndividualDebtBalance() {
             <div className="page">
                 <div className="card">
                     <p className="error">{error}</p>
-                    <Link to="/debts">Back to individual debts</Link>
+                    <p className="card-footer">
+                        <Link to="/debts">Back to individual debts</Link>
+                    </p>
                 </div>
             </div>
         );
@@ -86,11 +88,11 @@ function IndividualDebtBalance() {
 
     return (
         <div className="page">
-            <div className="card">
+            <div className="card card-form">
                 <h1>{balance.otherUsername}</h1>
-                <h2>{netLine(balance)}</h2>
+                <p className="debt-net">{netLine(balance)}</p>
 
-                <h3>Breakdown</h3>
+                <h2 className="debt-breakdown-heading">Breakdown</h2>
                 {balance.entries.length === 0 ? (
                     <p className="empty">
                         No individual entries between you.
@@ -100,28 +102,28 @@ function IndividualDebtBalance() {
                 ) : (
                     <ul className="debt-list">
                         {balance.entries.map((entry) => (
-                            <li key={entry.id}>
-                                <span>{entryLine(entry)}</span>
-                                <span> - {entry.description} ({entry.date})</span>
-                                {entry.canEdit && (
-                                    <>
-                                        {' '}
+                            <li key={entry.id} className="debt-entry">
+                                <div className="debt-entry-text">
+                                    <span className="debt-entry-line">{entryLine(entry)}</span>
+                                    <span className="debt-entry-meta">{entry.description} · {entry.date}</span>
+                                </div>
+                                <div className="debt-entry-actions">
+                                    {entry.canEdit && (
                                         <Link to={`/debts/${otherUserId}/entries/${entry.id}/edit`}>Edit</Link>
-                                    </>
-                                )}
-                                {/* #2 AC7: only the person who is owed can write a debt off */}
-                                {entry.payerUserId !== Number(otherUserId) && (
-                                    <>
-                                        {' '}
+                                    )}
+                                    {/* #2 AC7: only the person who is owed can write a debt off */}
+                                    {entry.payerUserId !== Number(otherUserId) && (
                                         <button type="button" className="button-danger button-small" onClick={() => setEntryToDelete(entry)}>Delete</button>
-                                    </>
-                                )}
+                                    )}
+                                </div>
                             </li>
                         ))}
                     </ul>
                 )}
 
-                <Link to="/debts">Back to individual debts</Link>
+                <p className="card-footer">
+                    <Link to="/debts">Back to individual debts</Link>
+                </p>
             </div>
 
             {entryToDelete && (
