@@ -16,7 +16,7 @@
     padding: var(--space-5);
     color: var(--text);
     text-decoration: none;
-    background-color: #fff;
+    background-color: var(--surface-raised);
     border: 1px solid var(--border);
     border-radius: var(--radius-input);
     transition: border-color 0.15s, transform 0.15s;
