@@ -85,7 +85,7 @@ export default function SettlementView({ groupId, baseCurrency }) {
                     {settlement.length === 0 ? (
                         <p className="empty">Everyone is settled up.</p>
                     ) : (
-                        <ul>
+                        <ul className="settlement-list">
                             {settlement.map((s, idx) => {
                                 const fromUsername = memberLookup.get(s.fromUserId) || `User ${s.fromUserId}`;
                                 const toUsername = memberLookup.get(s.toUserId) || `User ${s.toUserId}`;
@@ -100,8 +100,8 @@ export default function SettlementView({ groupId, baseCurrency }) {
                                                                         <button
                                                                             type="button"
                                                                             onClick={() => onMarkPaid(s.fromUserId, s.toUserId)}
+                                                                            className="button-small"
                                                                             disabled={paying === `${s.fromUserId}-${s.toUserId}`}
-                                                                            style={{ marginLeft: '0.75rem' }}
                                                                         >
                                                                             {paying === `${s.fromUserId}-${s.toUserId}` ? 'Marking paid…' : 'Mark as paid'}
                                                                         </button>

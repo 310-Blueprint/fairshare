@@ -126,6 +126,32 @@ h2 {
     text-align: left;
 }
 
+/* A white panel inside a card, holding one section of a busy screen. */
+.panel {
+    padding: var(--space-5);
+    background-color: #fff;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-input);
+}
+
+.panel h2 {
+    margin: 0 0 var(--space-4);
+}
+
+/* A section's title with its action alongside, e.g. "Expenses" and "Add an expense". */
+.section-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    margin-bottom: var(--space-4);
+}
+
+.section-header h2 {
+    margin: 0;
+}
+
 /* ---- Links ---- */
 
 a {

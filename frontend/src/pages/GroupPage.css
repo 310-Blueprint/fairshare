@@ -1,16 +1,37 @@
-.group-card h2 {
-    margin: 30px 0 10px;
-    font-size: 18px;
-    border-bottom: 1px solid #eee;
-    padding-bottom: 6px;
+/* #83: the group screen fills a wider card, with its sections as panels in two columns. */
+.group-card {
+    max-width: 1100px;
 }
 
-.balance {
-    color: #333;
-    
+.group-description {
+    margin: var(--space-2) 0 0;
+    color: var(--text-muted);
 }
+
+.group-sections {
+    display: grid;
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+    align-items: start;
+    gap: var(--space-5);
+}
+
+/* Each column stacks its own panels, so a tall panel never leaves a gap in the other column. */
+.group-column {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-5);
+}
+
+/* Narrower desktop windows stack everything in reading order. */
+@media (max-width: 1099px) {
+    .group-sections {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
 .expense-list,
-.balance-list {
+.balance-list,
+.settlement-list {
     list-style: none;
     margin: 0;
     padding: 0;
@@ -18,32 +39,74 @@
 
 .expense-list li {
     display: grid;
-    grid-template-columns: 1fr auto;
-    gap: 2px 12px;
-    padding: 10px 0;
-    border-bottom: 1px solid #f0f0f0;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    align-items: center;
+    gap: 2px var(--space-4);
+    padding: var(--space-3) 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.expense-list li:last-child {
+    border-bottom: none;
 }
 
 .expense-description {
-    font-weight: 600;
+    grid-column: 1;
+    font-weight: 500;
+}
+
+.expense-meta {
+    grid-column: 1;
+    font-size: 13px;
+    color: var(--text-muted);
 }
 
 .expense-amount {
     grid-row: 1 / span 2;
     grid-column: 2;
-    align-self: center;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
 }
 
-.expense-meta {
-    font-size: 13px;
-    color: #666;
+.card .expense-edit {
+    grid-row: 1 / span 2;
+    grid-column: 3;
+    font-size: 14px;
+}
+
+.balance {
+    color: var(--text);
 }
 
 .balance-list li {
-    padding: 6px 0;
+    padding: var(--space-2) 0;
+    border-bottom: 1px solid var(--border);
 }
 
-.action {
+.balance-list li:last-child {
+    border-bottom: none;
+}
+
+.section-link {
     display: inline-block;
-    margin-bottom: 10px;
+    margin-top: var(--space-3);
+    font-size: 14px;
+}
+
+.settlement-list {
+    margin-top: var(--space-4);
+}
+
+.settlement-list li {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    padding: var(--space-3) 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.settlement-list li:last-child {
+    border-bottom: none;
 }
