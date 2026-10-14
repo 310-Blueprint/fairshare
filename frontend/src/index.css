@@ -300,40 +300,50 @@ form button[type="submit"] {
     margin-top: var(--space-5);
 }
 
-.logo {
-    display: inline-flex;
-    align-items: center;
-}
-
-.logo-image {
-    display: block;
-    height: 48px;
-    width: auto;
-}
+/* ---- Header ---- */
 
 .header {
     position: sticky;
     top: 0;
     z-index: 10;
-    background: #fff;
-    border-bottom: 1px solid #e5e5e5;
+    background-color: var(--bg);
 }
 
 .header-inner {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 12px 24px;
+    min-height: 80px;
+    padding-top: var(--space-4);
+    padding-bottom: var(--space-4);
 }
 
-.main-nav {
-    display: flex;
-    gap: 16px;
+.profile-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 52px;
+    height: 52px;
+    color: var(--accent);
+    background-color: var(--surface);
+    border: 2px solid var(--accent);
+    border-radius: 50%;
+    transition: transform 0.15s;
+}
+
+.profile-button:hover {
+    transform: scale(1.05);
+}
+
+.logo {
+    display: inline-flex;
     align-items: center;
 }
 
-.main-nav a {
-    text-decoration: none;
-    color: #333;
-    font-weight: 600;
+/* The logo PNG has its own dark tile, which matches the page background. */
+.logo-image {
+    display: block;
+    height: 52px;
+    width: auto;
+    border-radius: var(--radius-input);
 }
