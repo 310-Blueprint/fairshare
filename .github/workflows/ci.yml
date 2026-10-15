@@ -28,6 +28,11 @@ jobs:
             backend/pom.xml
             backend/.mvn/wrapper/maven-wrapper.properties
 
+      - name: Install Tesseract
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes tesseract-ocr libtesseract-dev
+
       - name: Verify backend
         working-directory: backend
         run: ./mvnw --batch-mode clean verify

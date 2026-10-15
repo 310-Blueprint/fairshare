@@ -1,0 +1,273 @@
+/* #5 receipt scanner, in the #83 redesign's tokens. Rules are scoped to .receipt-scanner so
+   they take precedence over the shared button and input styles in index.css. */
+.receipt-scanner {
+    margin-bottom: var(--space-4);
+}
+
+/* Collapsed state: a dashed drop-zone style button that opens the scanner. */
+.receipt-scanner .receipt-scan-trigger {
+    display: flex;
+    width: 100%;
+    min-height: 0;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-3) var(--space-4);
+    font-weight: 400;
+    color: var(--text);
+    text-align: left;
+    background-color: var(--surface-raised);
+    border: 1px dashed var(--border);
+    border-radius: var(--radius-input);
+}
+
+.receipt-scanner .receipt-scan-trigger:hover,
+.receipt-scanner .receipt-scan-trigger:focus-visible {
+    background-color: var(--success-surface);
+    border-color: var(--accent);
+}
+
+.receipt-scan-trigger span:last-child {
+    display: grid;
+    gap: 2px;
+}
+
+.receipt-scan-trigger small,
+.receipt-file-help,
+.receipt-progress small,
+.receipt-list-heading span {
+    color: var(--text-muted);
+}
+
+.receipt-camera-icon {
+    display: grid;
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    place-items: center;
+    color: var(--success);
+    background-color: var(--success-surface);
+    border-radius: 50%;
+}
+
+/* Expanded state: a white panel like the group screen's. */
+.receipt-panel {
+    padding: var(--space-4);
+    background-color: var(--surface-raised);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-input);
+}
+
+.receipt-panel-heading,
+.receipt-list-heading,
+.receipt-total-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+}
+
+.receipt-panel-heading p {
+    margin: var(--space-1) 0 0;
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+.receipt-scanner button {
+    width: auto;
+    margin: 0;
+}
+
+.receipt-scanner .text-button {
+    flex-shrink: 0;
+    white-space: nowrap;
+    min-height: 0;
+    padding: var(--space-1);
+    font-weight: 500;
+    color: var(--success);
+    background: transparent;
+    border: 0;
+}
+
+.receipt-scanner .text-button:hover {
+    text-decoration: underline;
+    background: transparent;
+}
+
+.receipt-upload-actions,
+.receipt-result-actions {
+    display: flex;
+    gap: var(--space-3);
+    margin-top: var(--space-4);
+}
+
+/* The upload labels and result buttons match the app's pill buttons. */
+.receipt-scanner .receipt-file-button,
+.receipt-scanner .receipt-result-actions button {
+    white-space: nowrap;
+    display: inline-flex;
+    flex: 1;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    padding: var(--space-2) var(--space-4);
+    font-weight: 500;
+    color: var(--text);
+    text-align: center;
+    background-color: var(--accent);
+    border: 1px solid transparent;
+    border-radius: var(--radius-pill);
+    cursor: pointer;
+    transition: background-color 0.15s;
+}
+
+.receipt-scanner .receipt-file-button:hover,
+.receipt-scanner .receipt-result-actions button:hover {
+    background-color: var(--accent-hover);
+}
+
+.receipt-scanner .receipt-file-button.secondary,
+.receipt-scanner .receipt-result-actions .secondary {
+    background-color: transparent;
+    border-color: var(--text);
+}
+
+.receipt-scanner .receipt-file-button.secondary:hover,
+.receipt-scanner .receipt-result-actions .secondary:hover {
+    background-color: var(--surface-muted);
+}
+
+/* Visually hidden, but still reachable by the labels. The input selector outranks the shared
+   input rule, which would otherwise stretch these to the full width of the page. */
+.receipt-scanner input.receipt-file-input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+.receipt-file-help {
+    display: block;
+    margin-top: var(--space-2);
+    font-size: 12px;
+}
+
+.receipt-progress {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-5) 0 var(--space-1);
+}
+
+.receipt-progress > span:last-child {
+    display: grid;
+    gap: 2px;
+}
+
+.receipt-spinner {
+    width: 24px;
+    height: 24px;
+    border: 3px solid var(--success-surface);
+    border-top-color: var(--success);
+    border-radius: 50%;
+    animation: receipt-spin 0.8s linear infinite;
+}
+
+@keyframes receipt-spin {
+    to { transform: rotate(360deg); }
+}
+
+.receipt-results {
+    margin-top: var(--space-4);
+}
+
+.receipt-list-heading span {
+    font-size: 12px;
+}
+
+/* Long receipts scroll inside the panel so the card still fits the window. */
+.receipt-items {
+    display: grid;
+    gap: var(--space-2);
+    max-height: 220px;
+    margin-top: var(--space-2);
+    overflow-y: auto;
+}
+
+.receipt-item {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 110px;
+    gap: var(--space-2);
+}
+
+.receipt-scanner .receipt-item > input,
+.receipt-price-input {
+    min-width: 0;
+    background-color: var(--surface-raised);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-input);
+}
+
+.receipt-scanner .receipt-item > input,
+.receipt-scanner .receipt-price-input input {
+    width: 100%;
+    padding: var(--space-2);
+    background: transparent;
+}
+
+.receipt-scanner .receipt-price-input input {
+    border: 0;
+    box-shadow: none;
+}
+
+.receipt-price-input {
+    display: flex;
+    align-items: center;
+    padding-left: var(--space-2);
+}
+
+.receipt-price-input:focus-within {
+    border-color: var(--accent-strong);
+    box-shadow: 0 0 0 3px rgba(102, 205, 164, 0.35);
+}
+
+.receipt-total-row {
+    margin-top: var(--space-3);
+    padding-top: var(--space-3);
+    font-weight: 600;
+    border-top: 1px solid var(--border);
+}
+
+.receipt-total-input {
+    width: 130px;
+}
+
+.receipt-error {
+    display: grid;
+    gap: var(--space-2);
+    margin-top: var(--space-3);
+    padding: var(--space-3);
+    color: var(--danger);
+    background-color: var(--danger-surface);
+    border-radius: var(--radius-input);
+}
+
+.receipt-scanner .receipt-error .text-button {
+    justify-self: start;
+    color: var(--danger);
+    text-decoration: underline;
+}
+
+@media (max-width: 480px) {
+    .receipt-upload-actions,
+    .receipt-result-actions {
+        flex-direction: column;
+    }
+
+    .receipt-item {
+        grid-template-columns: minmax(0, 1fr) 100px;
+    }
+}
