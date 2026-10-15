@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { deleteIndividualDebt, getBalanceWithUser } from '../api/individualDebts';
 import { money } from '../utils/formatExpenseAmount';
-// Shares the confirmation dialog styles with the group members page.
+// The confirmation dialog's styles are shared, in index.css.
 import './IndividualDebts.css';
 
 function netLine(balance) {
@@ -128,10 +128,9 @@ function IndividualDebtBalance() {
 
             {entryToDelete && (
                 <div className="confirmation-backdrop">
-                    <div
+                    <dialog
+                        open
                         className="confirmation-dialog"
-                        role="dialog"
-                        aria-modal="true"
                         aria-labelledby="confirmation-title"
                     >
                         <h2 id="confirmation-title">Delete this entry?</h2>
@@ -145,7 +144,7 @@ function IndividualDebtBalance() {
                                 {deleting ? 'Deleting...' : 'Delete'}
                             </button>
                         </div>
-                    </div>
+                    </dialog>
                 </div>
             )}
         </div>

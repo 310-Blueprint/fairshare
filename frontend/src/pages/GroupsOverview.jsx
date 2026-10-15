@@ -20,7 +20,7 @@ function GroupsOverview() {
                 setLoading(false);
             }
         }
-        load();
+        void load();
     }, []);
 
     if (loading) {
@@ -41,7 +41,7 @@ function GroupsOverview() {
                 </div>
 
                 {location.state?.notice && (
-                    <p className="success" role="status">{location.state.notice}</p>
+                    <output className="success">{location.state.notice}</output>
                 )}
 
                 {error && <span className="error">{error}</span>}

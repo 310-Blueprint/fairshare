@@ -81,6 +81,17 @@
     overflow-y: auto;
 }
 
+/* On smaller laptops the right column needs more room for the settlement and export rows. */
+@media (max-width: 1199px) {
+    .group-sections {
+        grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+    }
+
+    .group-card .panel {
+        padding: var(--space-3) var(--space-4);
+    }
+}
+
 /* Below desktop widths the panels stack in reading order and the card scrolls as a whole. */
 @media (max-width: 899px) {
     .group-sections {
@@ -123,4 +134,15 @@
 
 .settlement-list li:last-child {
     border-bottom: none;
+}
+
+.export-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+}
+
+/* Export is just a title and two buttons, so it needs no space below its header. */
+.group-export .section-header {
+    margin-bottom: 0;
 }

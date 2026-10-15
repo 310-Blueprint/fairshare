@@ -1,8 +1,9 @@
 import { it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import GroupPage from '../src/pages/GroupPage.jsx';
-import { getGroup, getGroupBalances, getGroupMembers } from '../src/api/groups';
+import { exportGroup, getGroup, getGroupBalances, getGroupMembers } from '../src/api/groups';
 import { getExpenses } from '../src/api/expenses';
 import { getRecurringExpenses } from '../src/api/recurringExpenses';
 
@@ -13,6 +14,7 @@ vi.mock('../src/api/groups', () => ({
     getGroupMembers: vi.fn(),
     getGroupBalances: vi.fn(),
     computeSettlement: vi.fn(),
+    exportGroup: vi.fn(),
 }));
 
 vi.mock('../src/api/expenses', () => ({
@@ -218,4 +220,35 @@ it('AC8: shows a not-found message when the user is not a member', async () => {
 
     expect(await screen.findByText('Group not found')).toBeInTheDocument();
     expect(screen.queryByText('No expenses yet.')).not.toBeInTheDocument();
+});
+
+it('#12: exporting as CSV downloads the file under the name the server gave it', async () => {
+    const blob = new Blob(['Date,Description'], { type: 'text/csv' });
+    exportGroup.mockResolvedValue({ blob, filename: 'fairshare-flat-3-2026-10-12.csv' });
+    URL.createObjectURL = vi.fn().mockReturnValue('blob:export');
+    URL.revokeObjectURL = vi.fn();
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function () {
+        expect(this.download).toBe('fairshare-flat-3-2026-10-12.csv');
+        expect(this.href).toBe('blob:export');
+    });
+    renderPage();
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Export CSV' }));
+
+    expect(exportGroup).toHaveBeenCalledWith('1', 'csv');
+    expect(URL.createObjectURL).toHaveBeenCalledWith(blob);
+    expect(click).toHaveBeenCalledTimes(1);
+    expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:export');
+    click.mockRestore();
+});
+
+it('#12: a failed export shows the error and leaves the buttons usable', async () => {
+    exportGroup.mockResolvedValue({ error: 'You are not a member of this group' });
+    renderPage();
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Export PDF' }));
+
+    expect(exportGroup).toHaveBeenCalledWith('1', 'pdf');
+    expect(await screen.findByText('You are not a member of this group')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Export PDF' })).toBeEnabled();
 });

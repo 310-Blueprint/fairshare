@@ -556,6 +556,8 @@ button:disabled {
 }
 
 .button-small {
+    flex-shrink: 0;
+    white-space: nowrap;
     min-height: 36px;
     padding: var(--space-1) var(--space-4);
     font-size: 14px;
@@ -593,8 +595,12 @@ form button[type="submit"] {
     background: rgba(0, 0, 0, 0.6);
 }
 
+/* The dialogs are native <dialog> elements, so the browser's own position, margin and border are reset. */
 .confirmation-dialog {
+    position: static;
     width: min(420px, 100%);
+    margin: 0;
+    border: 0;
     padding: var(--space-6);
     color: var(--text);
     background: var(--surface);
