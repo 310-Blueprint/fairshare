@@ -628,8 +628,8 @@ form button[type="submit"] {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 64px;
-    height: 64px;
+    width: 48px;
+    height: 48px;
     color: var(--accent);
     background-color: var(--surface);
     border: 2px solid var(--accent);
