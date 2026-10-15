@@ -13,8 +13,8 @@ function ProfileIcon() {
 }
 
 function Header() {
-  // Home and Log In show the large logo in the page itself, so the header only adds it elsewhere.
-  const showsLargeLogo = ['/', '/login'].includes(useLocation().pathname);
+  // Log In shows the large logo in the page itself, so the header only adds it elsewhere.
+  const showsLargeLogo = useLocation().pathname === '/login';
 
   return (
     <header className="header">

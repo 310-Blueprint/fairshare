@@ -28,7 +28,7 @@ function Login() {
       return;
     }
 
-    navigate('/');
+    navigate('/groups');
   }
 
   return (

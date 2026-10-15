@@ -223,6 +223,12 @@ form.inline-form button[type="submit"] {
     text-align: left;
 }
 
+.header-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+}
+
 /* A white panel inside a card, holding one section of a busy screen. */
 .panel {
     padding: var(--space-5);

@@ -19,13 +19,6 @@ it('#83: shows a home link with the logo away from the home page', () => {
     expect(screen.getByRole('link', { name: 'FairShare home' })).toHaveAttribute('href', '/');
 });
 
-it('#83: leaves the logo out of the header on the home page, which shows it large', () => {
-    renderAt('/');
-
-    expect(screen.queryByRole('link', { name: 'FairShare home' })).not.toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'My profile' })).toBeInTheDocument();
-});
-
 it('#83: leaves the logo out of the header on the log in page, which also shows it large', () => {
     renderAt('/login');
 
