@@ -82,6 +82,34 @@ export async function markSettlementPaid(id, fromUserId, toUserId) {
     return response.status === 204 ? true : response.json();
 }
 
+// #12: pulls the filename out of a Content-Disposition header, preferring the UTF-8 form.
+function filenameFrom(contentDisposition) {
+    if (!contentDisposition) return null;
+    const encoded = /filename\*=UTF-8''([^;]+)/i.exec(contentDisposition);
+    if (encoded) {
+        try {
+            return decodeURIComponent(encoded[1]);
+        } catch {
+            // fall through to the plain filename
+        }
+    }
+    const plain = /filename="?([^";]+)"?/i.exec(contentDisposition);
+    return plain ? plain[1] : null;
+}
+
+// #12: downloads the group's expenses as format 'csv' or 'pdf'.
+export async function exportGroup(id, format) {
+    const groupId = requirePositiveInteger(id, 'Group ID');
+    const response = await apiFetch(`/groups/${groupId}/export?format=${encodeURIComponent(format)}`);
+    if (!response.ok) {
+        return { error: await readError(response, 'Could not export this group.') };
+    }
+    return {
+        blob: await response.blob(),
+        filename: filenameFrom(response.headers.get('Content-Disposition')) || `fairshare-export.${format}`,
+    };
+}
+
 export async function getGroupMembers(id) {
     const groupId = requirePositiveInteger(id, 'Group ID');
     const response = await apiFetch(`/groups/${groupId}/members`);

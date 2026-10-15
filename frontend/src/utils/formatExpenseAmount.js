@@ -1,4 +1,4 @@
-function money(currency, value) {
+export function money(currency, value) {
     return `${currency} ${Math.abs(Number(value)).toFixed(2)}`;
 }
 

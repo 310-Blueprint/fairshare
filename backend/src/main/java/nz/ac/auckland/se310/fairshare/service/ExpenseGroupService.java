@@ -146,6 +146,16 @@ public class ExpenseGroupService {
                 .toList();
     }
 
+    // #2 AC3: the live settle-up plan, so other features use the same numbers as the group page.
+    // Read-only: unlike computeSettlement, nothing is persisted.
+    @Transactional(readOnly = true)
+    public List<SettlementLine> getLiveSettlementPlan(Long groupId, Long memberId) {
+        ExpenseGroup group = requireMemberGroup(groupId, memberId);
+        Map<Long, BigDecimal> balances = computeEffectiveBalances(groupId, group,
+                expenseService.getExpensesForGroup(groupId, memberId));
+        return calculateSettlements(balances);
+    }
+
     public List<SettlementLine> computeSettlement(Long groupId, Long currentUserId, SettlementRequest request) {
         ExpenseGroup group = requireMemberGroup(groupId, currentUserId);
 

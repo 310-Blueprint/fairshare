@@ -100,10 +100,44 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(Map.of("endDate", ex.getMessage()));
     }
 
+    // #12: an unknown ?format= on the export endpoint.
+    @ExceptionHandler(InvalidExportFormatException.class)
+    public ResponseEntity<Map<String, String>> handleInvalidExportFormat(InvalidExportFormatException ex) {
+        return ResponseEntity.badRequest().body(Map.of("format", ex.getMessage()));
+    }
+
     @ExceptionHandler(RecurringExpenseNotFoundException.class)
     public ResponseEntity<Map<String, String>> handleRecurringExpenseNotFound(
             RecurringExpenseNotFoundException ex) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(Map.of(ERROR_KEY, ex.getMessage()));
+    }
+
+    // #2
+    @ExceptionHandler(UserNotFoundException.class)
+    public ResponseEntity<Map<String, String>> handleUserNotFound(UserNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(Map.of(ERROR_KEY, ex.getMessage()));
+    }
+
+    // #2 AC9
+    @ExceptionHandler(InvalidDebtEntryException.class)
+    public ResponseEntity<Map<String, String>> handleInvalidDebtEntry(InvalidDebtEntryException ex) {
+        return ResponseEntity.badRequest().body(Map.of(ERROR_KEY, ex.getMessage()));
+    }
+
+    // #2
+    @ExceptionHandler(IndividualDebtNotFoundException.class)
+    public ResponseEntity<Map<String, String>> handleIndividualDebtNotFound(IndividualDebtNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(Map.of(ERROR_KEY, ex.getMessage()));
+    }
+
+    // #2 AC7
+    @ExceptionHandler(IndividualDebtAccessDeniedException.class)
+    public ResponseEntity<Map<String, String>> handleIndividualDebtAccessDenied(
+            IndividualDebtAccessDeniedException ex) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
                 .body(Map.of(ERROR_KEY, ex.getMessage()));
     }
 }
