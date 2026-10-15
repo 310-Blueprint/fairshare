@@ -25,3 +25,9 @@ it('#83: leaves the logo out of the header on the home page, which shows it larg
     expect(screen.queryByRole('link', { name: 'FairShare home' })).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'My profile' })).toBeInTheDocument();
 });
+
+it('#83: leaves the logo out of the header on the log in page, which also shows it large', () => {
+    renderAt('/login');
+
+    expect(screen.queryByRole('link', { name: 'FairShare home' })).not.toBeInTheDocument();
+});

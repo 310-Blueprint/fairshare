@@ -13,8 +13,8 @@ function ProfileIcon() {
 }
 
 function Header() {
-  // Home shows the large logo in the page itself, so the header only adds it elsewhere.
-  const isHome = useLocation().pathname === '/';
+  // Home and Log In show the large logo in the page itself, so the header only adds it elsewhere.
+  const showsLargeLogo = ['/', '/login'].includes(useLocation().pathname);
 
   return (
     <header className="header">
@@ -22,7 +22,7 @@ function Header() {
         <Link to="/profile" className="profile-button" aria-label="My profile">
           <ProfileIcon />
         </Link>
-        {!isHome && (
+        {!showsLargeLogo && (
           <Link to="/" className="logo" aria-label="FairShare home">
             <img src={FairShareLogo} alt="FairShare logo" className="logo-image" />
           </Link>

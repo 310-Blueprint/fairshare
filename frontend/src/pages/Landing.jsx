@@ -15,12 +15,12 @@ function Landing() {
 
     // #83: the profile page is reached from the header's profile button, so it isn't repeated here.
     return (
-        <div className="page landing">
-            <img src={FairShareLogo} alt="FairShare logo" className="landing-logo"/>
-            <h1 className="landing-title">Welcome to Fair<span className="accent-text">Share</span></h1>
+        <div className="page hero">
+            <img src={FairShareLogo} alt="FairShare logo" className="hero-logo"/>
+            <h1 className="hero-title">Welcome to Fair<span className="accent-text">Share</span></h1>
 
             <div className="card landing-card">
-                <p className="landing-tagline">Easily split bills and manage group expenses</p>
+                <p className="hero-tagline">Easily split bills and manage group expenses</p>
 
                 <div className="actions">
                     {isLoggedIn ? (

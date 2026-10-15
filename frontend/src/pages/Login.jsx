@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { API_BASE } from '../api/config';
+import FairShareLogo from '../resources/FairShareLogo.png';
 
 function Login() {
   const [email, setEmail] = useState('');
@@ -31,10 +32,13 @@ function Login() {
   }
 
   return (
-    <div className="page">
+    // #83: laid out like the home screen, with the logo and title above the card
+    <div className="page hero hero-compact">
+      <img src={FairShareLogo} alt="FairShare logo" className="hero-logo" />
+      <h1 className="hero-title">Log In</h1>
+
       <div className="card">
-        <h1>Log In</h1>
-        <p className="subtitle">Welcome back to FairShare</p>
+        <p className="hero-tagline">Welcome back to FairShare</p>
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">
