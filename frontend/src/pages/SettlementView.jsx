@@ -79,7 +79,7 @@ export default function SettlementView({ groupId, baseCurrency }) {
 
     return (
         <div>
-            <button onClick={onCompute}>Generate settlement plan</button>
+            <button className="button-small" onClick={onCompute}>Generate settlement plan</button>
             {settlement && (
                 <div>
                     {settlement.length === 0 ? (

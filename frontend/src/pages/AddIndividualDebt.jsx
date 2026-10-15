@@ -76,14 +76,16 @@ function AddIndividualDebt() {
                         />
                     </div>
 
-                    <DescriptionField
-                        value={description}
-                        onChange={setDescription}
-                        error={errors.description}
-                        placeholder="What was it for?"
-                    />
+                    <div className="form-row form-row-wide-start">
+                        <DescriptionField
+                            value={description}
+                            onChange={setDescription}
+                            error={errors.description}
+                            placeholder="What was it for?"
+                        />
 
-                    <DateField value={date} onChange={setDate} error={errors.date} max={today()} />
+                        <DateField value={date} onChange={setDate} error={errors.date} max={today()} />
+                    </div>
 
                     <FieldError message={errors.form} />
 

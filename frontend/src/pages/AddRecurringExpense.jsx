@@ -88,7 +88,7 @@ function AddRecurringExpense() {
 
     return (
         <div className="page">
-            <div className="card card-form">
+            <div className="card card-form card-form-wide">
                 <h1>Add a recurring expense</h1>
                 <p className="subtitle">Automatically split on a schedule</p>
 

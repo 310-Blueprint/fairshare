@@ -130,9 +130,11 @@ function EditIndividualDebt() {
                         />
                     </div>
 
-                    <DescriptionField value={description} onChange={setDescription} error={errors.description} />
+                    <div className="form-row form-row-wide-start">
+                        <DescriptionField value={description} onChange={setDescription} error={errors.description} />
 
-                    <DateField value={date} onChange={setDate} error={errors.date} max={today()} />
+                        <DateField value={date} onChange={setDate} error={errors.date} max={today()} />
+                    </div>
 
                     <FieldError message={errors.form} />
 

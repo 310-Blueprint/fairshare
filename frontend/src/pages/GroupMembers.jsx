@@ -99,7 +99,7 @@ function GroupMembers() {
                 <h1>Manage Members</h1>
                 <p className="subtitle">Add a registered user by email or username</p>
 
-                <form onSubmit={handleAdd}>
+                <form onSubmit={handleAdd} className="inline-form">
                     <div className="form-group">
                         <label htmlFor="member-identifier">Email or username</label>
                         <input

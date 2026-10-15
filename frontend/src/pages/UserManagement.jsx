@@ -112,31 +112,33 @@ function UserManagement() {
 
   return (
     <div className="page">
-      <div className="card">
+      <div className="card card-form">
         <h1>Manage Profile</h1>
         <p className="subtitle">Update your account information</p>
 
         <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label htmlFor="username">Username</label>
-            <input
-              id="username"
-              type="text"
-              value={username}
-              onChange={(event) => setUsername(event.target.value)}
-            />
-            {fieldErrors.username && <span className="error">{fieldErrors.username}</span>}
-          </div>
+          <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="username">Username</label>
+                <input
+                  id="username"
+                  type="text"
+                  value={username}
+                  onChange={(event) => setUsername(event.target.value)}
+                />
+                {fieldErrors.username && <span className="error">{fieldErrors.username}</span>}
+              </div>
 
-          <div className="form-group">
-            <label htmlFor="email">Email</label>
-            <input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-            />
-            {fieldErrors.email && <span className="error">{fieldErrors.email}</span>}
+              <div className="form-group">
+                <label htmlFor="email">Email</label>
+                <input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                />
+                {fieldErrors.email && <span className="error">{fieldErrors.email}</span>}
+              </div>
           </div>
 
           <div className="form-group">
@@ -151,31 +153,33 @@ function UserManagement() {
             {fieldErrors.password && <span className="error">{fieldErrors.password}</span>}
           </div>
 
-          <div className="form-group">
-            <label htmlFor="country">Country</label>
-            <select id="country" value={country} onChange={handleCountryChange}>
-              <option value="">Select your country</option>
-              {countries.map((item) => (
-                <option key={item.value} value={item.value}>
-                  {item.name}
-                </option>
-              ))}
-            </select>
-            {fieldErrors.country && <span className="error">{fieldErrors.country}</span>}
-          </div>
+          <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="country">Country</label>
+                <select id="country" value={country} onChange={handleCountryChange}>
+                  <option value="">Select your country</option>
+                  {countries.map((item) => (
+                    <option key={item.value} value={item.value}>
+                      {item.name}
+                    </option>
+                  ))}
+                </select>
+                {fieldErrors.country && <span className="error">{fieldErrors.country}</span>}
+              </div>
 
-          <div className="form-group">
-            <label htmlFor="currency">Currency</label>
-            <select id="currency" value={currency} onChange={(event) => setCurrency(event.target.value)}>
-              <option value="">Select your currency</option>
-              {currencies.map((item) => (
-                <option key={item.code} value={item.code}>
-                  {item.code} — {item.name}
-                </option>
-              ))}
-            </select>
-            {fieldErrors.currency && <span className="error">{fieldErrors.currency}</span>}
-            {currenciesError && <span className="error">{currenciesError}</span>}
+              <div className="form-group">
+                <label htmlFor="currency">Currency</label>
+                <select id="currency" value={currency} onChange={(event) => setCurrency(event.target.value)}>
+                  <option value="">Select your currency</option>
+                  {currencies.map((item) => (
+                    <option key={item.code} value={item.code}>
+                      {item.code} — {item.name}
+                    </option>
+                  ))}
+                </select>
+                {fieldErrors.currency && <span className="error">{fieldErrors.currency}</span>}
+                {currenciesError && <span className="error">{currenciesError}</span>}
+              </div>
           </div>
 
           {error && <div className="error">{error}</div>}

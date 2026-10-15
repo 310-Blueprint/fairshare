@@ -77,34 +77,36 @@ function UserProfile() {
 
   return (
     <div className="page">
-      <div className="card">
+      <div className="card card-form">
         <h1>Create Your Profile</h1>
         <p className="subtitle">Enter your information below</p>
 
         <form onSubmit={handleSubmit}>
 
-          <div className="form-group">
-            <label htmlFor="username">Username</label>
-            <input
-              id="username"
-              type="text"
-              value={username}
-              placeholder="Enter your username"
-              onChange={(event) => setUsername(event.target.value)}
-            />
-            {errors.username && <span className="error">{errors.username}</span>}
-          </div>
+          <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="username">Username</label>
+                <input
+                  id="username"
+                  type="text"
+                  value={username}
+                  placeholder="Enter your username"
+                  onChange={(event) => setUsername(event.target.value)}
+                />
+                {errors.username && <span className="error">{errors.username}</span>}
+              </div>
 
-          <div className="form-group">
-            <label htmlFor="password">Password</label>
-            <input
-              id="password"
-              type="password"
-              value={password}
-              placeholder="Enter your password"
-              onChange={(event) => setPassword(event.target.value)}
-            />
-            {errors.password && <span className="error">{errors.password}</span>}
+              <div className="form-group">
+                <label htmlFor="password">Password</label>
+                <input
+                  id="password"
+                  type="password"
+                  value={password}
+                  placeholder="Enter your password"
+                  onChange={(event) => setPassword(event.target.value)}
+                />
+                {errors.password && <span className="error">{errors.password}</span>}
+              </div>
           </div>
 
           <div className="form-group">
@@ -119,35 +121,37 @@ function UserProfile() {
             {errors.email && <span className="error">{errors.email}</span>}
           </div>
 
-          <div className="form-group">
-            <label htmlFor="country">Country</label>
-            <select id="country" value={country} onChange={handleCountryChange}>
-              <option value="">Select your country</option>
-              {countries.map((c) => (
-                <option key={c.value} value={c.value}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-            {errors.country && <span className="error">{errors.country}</span>}
-          </div>
+          <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="country">Country</label>
+                <select id="country" value={country} onChange={handleCountryChange}>
+                  <option value="">Select your country</option>
+                  {countries.map((c) => (
+                    <option key={c.value} value={c.value}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+                {errors.country && <span className="error">{errors.country}</span>}
+              </div>
 
-          <div className="form-group">
-            <label htmlFor="currency">Currency</label>
-            <select
-              id="currency"
-              value={currency}
-              onChange={(event) => setCurrency(event.target.value)}
-            >
-              <option value="">Select your currency</option>
-              {currencies.map((curr) => (
-                <option key={curr.code} value={curr.code}>
-                  {curr.code} — {curr.name}
-                </option>
-              ))}
-            </select>
-            {errors.currency && <span className="error">{errors.currency}</span>}
-            {currenciesError && <span className="error">{currenciesError}</span>}
+              <div className="form-group">
+                <label htmlFor="currency">Currency</label>
+                <select
+                  id="currency"
+                  value={currency}
+                  onChange={(event) => setCurrency(event.target.value)}
+                >
+                  <option value="">Select your currency</option>
+                  {currencies.map((curr) => (
+                    <option key={curr.code} value={curr.code}>
+                      {curr.code} — {curr.name}
+                    </option>
+                  ))}
+                </select>
+                {errors.currency && <span className="error">{errors.currency}</span>}
+                {currenciesError && <span className="error">{currenciesError}</span>}
+              </div>
           </div>
 
           <button type="submit">Create Profile</button>

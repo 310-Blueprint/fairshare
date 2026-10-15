@@ -1,40 +1,94 @@
 /* #83: the group screen fills a wider card, with its sections as panels in two columns. */
+/* The group screen holds the most, so it trims the page and card padding to fit the window. */
+.page:has(.group-card) {
+    --page-padding: var(--space-4);
+}
+
 .group-card {
     max-width: 1100px;
+    padding: var(--space-5) var(--space-6);
+}
+
+.group-card .card-header {
+    margin-bottom: var(--space-3);
+}
+
+.group-card .group-sections,
+.group-card .group-column {
+    gap: var(--space-4);
+}
+
+.group-card h1 {
+    font-size: 1.75rem;
+}
+
+.group-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+}
+
+
+.group-card .panel {
+    padding: var(--space-3) var(--space-5);
+}
+
+.group-card .section-header {
+    margin-bottom: var(--space-2);
+}
+
+.group-card .panel h2 {
+    font-size: 1.25rem;
 }
 
 .group-description {
-    margin: var(--space-2) 0 0;
+    margin: var(--space-1) 0 0;
     color: var(--text-muted);
 }
 
 .group-sections {
     display: grid;
+    flex: 1 1 auto;
+    min-height: 0;
     grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
-    align-items: start;
+    grid-template-rows: minmax(0, 1fr);
     gap: var(--space-5);
 }
 
-/* Each column stacks its own panels, so a tall panel never leaves a gap in the other column. */
+/* Each column stacks its own panels, so a tall panel never leaves a gap in the other column.
+   Panels shrink to share the window's height; a long list then scrolls inside its panel. */
 .group-column {
     display: flex;
     flex-direction: column;
+    min-height: 0;
     gap: var(--space-5);
 }
 
-/* Narrower desktop windows stack everything in reading order. */
-@media (max-width: 1099px) {
+.group-column .panel {
+    display: flex;
+    flex-direction: column;
+    flex: 0 1 auto;
+    min-height: 0;
+}
+
+.group-column .section-header,
+.group-column .panel h2 {
+    flex-shrink: 0;
+}
+
+/* The settlement plan's list sits inside SettlementView, so the panel itself scrolls. */
+.group-settlement {
+    overflow-y: auto;
+}
+
+/* Below desktop widths the panels stack in reading order and the card scrolls as a whole. */
+@media (max-width: 899px) {
     .group-sections {
         grid-template-columns: minmax(0, 1fr);
+        grid-template-rows: none;
     }
 }
 
-.settlement-list {
-    list-style: none;
-    padding: 0;
-}
-
-/* Rows with an Edit link gain a third column for it. */
 .expense-list li:has(.expense-edit) {
     grid-template-columns: minmax(0, 1fr) auto auto;
 }
@@ -52,16 +106,18 @@
 }
 
 .settlement-list {
-    margin-top: var(--space-4);
+    margin: var(--space-3) 0 0;
+    padding: 0;
+    list-style: none;
 }
 
 .settlement-list li {
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     align-items: center;
     justify-content: space-between;
     gap: var(--space-3);
-    padding: var(--space-3) 0;
+    padding: var(--space-2) 0;
     border-bottom: 1px solid var(--border);
 }
 

@@ -120,7 +120,10 @@ function GroupPage() {
                         <h1>{group.name}</h1>
                         {group.description && <p className="group-description">{group.description}</p>}
                     </div>
-                    <Link className="button button-secondary" to={`/groups/${id}/members`}>Manage members</Link>
+                    <div className="group-actions">
+                        <Link to="/groups">Back to your groups</Link>
+                        <Link className="button button-secondary" to={`/groups/${id}/members`}>Manage members</Link>
+                    </div>
                 </div>
 
                 {/* #83: sections sit in two columns on desktop widths */}
@@ -217,10 +220,6 @@ function GroupPage() {
                 </section>
                 </div>
                 </div>
-
-                <p className="card-footer">
-                    <Link to="/groups">Back to your groups</Link>
-                </p>
             </div>
         </div>
     );
