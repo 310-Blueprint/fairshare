@@ -103,6 +103,8 @@ class RecurringExpenseIntegrationTest {
         assertThat(created.description()).isEqualTo(RENT);
         assertThat(created.paidByUserId()).isEqualTo(bobId);
         assertThat(created.paidByUsername()).isEqualTo("bob");
+        assertThat(recurringExpenseRepository.findById(created.id()).orElseThrow().getCreatedBy().getId())
+                .isEqualTo(aliceId);
         assertThat(created.frequency()).isEqualTo(RecurringExpense.Frequency.MONTHLY);
         assertThat(created.startDate()).isEqualTo(START_DATE);
         assertThat(created.endDate()).isNull();

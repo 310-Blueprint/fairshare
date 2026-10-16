@@ -146,3 +146,52 @@
 .group-export .section-header {
     margin-bottom: 0;
 }
+
+.expense-actions {
+    display: flex;
+    gap: 12px;
+    align-items: baseline;
+    grid-column: 1;
+    margin-bottom: 10px;
+}
+
+.expense-actions .action {
+    margin: 0;
+}
+
+.expense-delete-link {
+    width: auto;
+    padding: 0;
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+    background: none;
+    color: #0000ee;
+    font: inherit;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.expense-delete-link:disabled {
+    color: #666;
+    cursor: default;
+}
+
+.expense-activity-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.expense-activity-list li {
+    padding: 10px 0;
+    border-bottom: 1px solid #f0f0f0;
+    overflow-wrap: anywhere;
+}
+
+.expense-activity-list time {
+    display: block;
+    margin-top: 4px;
+    font-size: 13px;
+    color: #666;
+}

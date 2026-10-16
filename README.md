@@ -17,15 +17,15 @@ The following works today:
 - Record an expense in any of 23 supported currencies. It is converted into the group's currency at the rate for the expense date, and the history shows both, e.g. `USD 20.00 (≈ NZD 34.11)`
 - Choose any supported currency as your home currency, which becomes the currency of groups you create
 - Split an expense equally across the selected members, accurate to the cent
-- Browse a group's expense history and edit an existing expense
+- Browse a group's expense history. Only the creator can edit or delete an expense, and deletion requires confirmation
+- View who edited or deleted an expense and when in the group's Expense activity section. Saving unchanged details does not add an activity entry
 - Set up a recurring expense, such as rent or a subscription, with a weekly, fortnightly or monthly schedule and an optional end date; it generates expenses automatically, and each generated expense is marked in the history and links back to the recurring expense that created it
 - See each member's balance, and the transactions behind a single member's balance
-- Generate a settlement plan for a group and mark individual payments as paid
+- Generate a settlement plan for a group and mark individual payments as paid. Reopening or regenerating the plan uses current balances; deleting an expense refreshes the displayed plan and preserves completed payments
 - Export a group's expense data from the group page, as a CSV file that opens cleanly in Excel or as a PDF. Both list every expense followed by each member's total paid, total share and net balance, including anyone who has since left the group
 
 The following is not built yet:
 
-- Deleting an expense. Viewing and editing work, deletion has no endpoint or interface. See [issue #11](https://github.com/se310-fairshare/fairshare/issues/11).
 - Editing, pausing or deleting a recurring expense once it exists. Only creating and viewing them work.
 - Splitting by percentage, shares or exact amounts. Only the equal split exists.
 
@@ -201,7 +201,9 @@ All responses are JSON except the export, which is a file download, and every ro
 | POST | `/groups/{groupId}/expenses` | Record an expense |
 | GET | `/groups/{groupId}/expenses` | A group's expense history |
 | GET | `/groups/{groupId}/expenses/{expenseId}` | One expense |
-| PUT | `/groups/{groupId}/expenses/{expenseId}` | Edit an expense |
+| PUT | `/groups/{groupId}/expenses/{expenseId}` | Edit an expense (creator only) |
+| DELETE | `/groups/{groupId}/expenses/{expenseId}` | Delete an expense (creator only) |
+| GET | `/groups/{groupId}/expenses/activity` | Expense edit/delete activity for current group members |
 | POST | `/groups/{groupId}/receipts/extract` | Extract editable purchase details from a receipt image |
 | POST | `/groups/{groupId}/recurring-expenses` | Create a recurring expense |
 | GET | `/groups/{groupId}/recurring-expenses` | A group's recurring expenses |

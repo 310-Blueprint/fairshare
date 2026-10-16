@@ -9,6 +9,7 @@ function EditExpense() {
     const { id, expenseId } = useParams();
     const navigate = useNavigate();
     const [members, setMembers] = useState([]);
+    const [canEdit, setCanEdit] = useState(false);
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [errors, setErrors] = useState({});
@@ -24,6 +25,8 @@ function EditExpense() {
     // Populate the edit form from the selected expense and the current group membership.
     useEffect(() => {
         async function loadData() {
+            setLoading(true);
+            setCanEdit(false);
             const [membersResult, expenseResult, currencyResult] = await Promise.all([
                 getGroupMembers(id),
                 getExpense(id, expenseId),
@@ -45,6 +48,8 @@ function EditExpense() {
             } else {
                 // #14: edit what the member originally entered, not the converted amount.
                 const { expense } = expenseResult;
+                const currentUserId = membersResult.members?.find(member => member.currentUser)?.userId;
+                setCanEdit(currentUserId != null && expense.createdByUserId === currentUserId);
                 setAmount(String(expense.originalAmount ?? expense.amount));
                 setCurrency(expense.originalCurrency ?? '');
                 setDescription(expenseResult.expense.description);
@@ -64,6 +69,7 @@ function EditExpense() {
     // Validates the selected participants before sending the updated expense to the backend.
     async function handleSubmit(event) {
         event.preventDefault();
+        if (!canEdit) return;
 
         if (participantUserIds.length === 0) {
             setErrors({ participantUserIds: 'At least one participant must be selected.' });
@@ -96,6 +102,13 @@ function EditExpense() {
 
     if (loading) {
         return <p>Loading...</p>;
+    }
+
+    if (!canEdit) {
+        return <div className="page"><div className="card">
+            <p role="alert">{errors.form || "Only the creator of this expense can edit it"}</p>
+            <Link to={`/groups/${id}`}>Back to the group</Link>
+        </div></div>;
     }
 
     return (

@@ -3,6 +3,7 @@ package nz.ac.auckland.se310.fairshare.controller;
 import jakarta.validation.Valid;
 import nz.ac.auckland.se310.fairshare.dto.CreateExpenseRequest;
 import nz.ac.auckland.se310.fairshare.dto.ExpenseResponse;
+import nz.ac.auckland.se310.fairshare.dto.ExpenseActivityResponse;
 import nz.ac.auckland.se310.fairshare.security.CurrentUserProvider;
 import nz.ac.auckland.se310.fairshare.service.ExpenseService;
 import org.springframework.http.ResponseEntity;
@@ -40,9 +41,20 @@ public class ExpenseController {
         return ResponseEntity.noContent().build();
     }
 
+    @DeleteMapping("/{expenseId}")
+    public ResponseEntity<Void> delete(@PathVariable Long groupId, @PathVariable Long expenseId) {
+        expenseService.deleteExpense(groupId, expenseId, currentUser.currentUserId());
+        return ResponseEntity.noContent().build();
+    }
+
     @GetMapping
     public List<ExpenseResponse> list(@PathVariable Long groupId) {
         return expenseService.getExpensesForGroup(groupId, currentUser.currentUserId());
+    }
+
+    @GetMapping("/activity")
+    public List<ExpenseActivityResponse> activity(@PathVariable Long groupId) {
+        return expenseService.getExpenseActivity(groupId, currentUser.currentUserId());
     }
 
     @GetMapping("/{expenseId}")

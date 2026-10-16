@@ -1,9 +1,10 @@
 import {useEffect, useState} from 'react';
 import {Link, useParams} from 'react-router-dom';
 import {exportGroup, getGroup, getGroupMembers} from '../api/groups';
-import {getExpenses} from '../api/expenses';
+import {getExpenses, deleteExpense} from '../api/expenses';
 import {getRecurringExpenses} from '../api/recurringExpenses';
 import SettlementView from './SettlementView';
+import ExpenseActivity from '../components/ExpenseActivity';
 import {formatExpenseAmount} from '../utils/formatExpenseAmount';
 import './GroupPage.css';
 
@@ -81,6 +82,9 @@ function GroupPage() {
     const [notFound, setNotFound] = useState(false);
     const [exporting, setExporting] = useState(null);
     const [exportError, setExportError] = useState(null);
+    const [deleting, setDeleting] = useState(null);
+    const [deleteError, setDeleteError] = useState(null);
+    const [expenseVersion, setExpenseVersion] = useState(0);
 
     // Fetch the group, expenses, and members whenever the route changes so the page stays in sync.
     useEffect(() => {
@@ -123,6 +127,35 @@ function GroupPage() {
 
         void load();   // errors are handled inside load()
     }, [id]);
+
+    async function handleDelete(expense) {
+        const currentUserId = members.find(member => member.currentUser)?.userId;
+        if (deleting !== null || currentUserId == null || expense.createdByUserId !== currentUserId) return;
+        if (!window.confirm(`Delete "${expense.description}"? This will remove the expense and update the group's balances.`)) {
+            return;
+        }
+        setDeleting(expense.id);
+        setDeleteError(null);
+        try {
+            const result = await deleteExpense(id, expense.id);
+            if (result.error) {
+                setDeleteError(result.error);
+                return;
+            }
+            setExpenses(previous => previous.filter(item => item.id !== expense.id));
+            setExpenseVersion(version => version + 1);
+            const memberResult = await getGroupMembers(id);
+            if (memberResult.error) {
+                setDeleteError(`Expense deleted, but balances could not refresh: ${memberResult.error}`);
+            } else {
+                setMembers(memberResult.members);
+            }
+        } catch {
+            setDeleteError('Could not complete deletion or refresh the group. Reload to check the latest history.');
+        } finally {
+            setDeleting(null);
+        }
+    }
 
     // #12: downloads the group's expenses as CSV or PDF.
     async function handleExport(format) {
@@ -171,6 +204,7 @@ function GroupPage() {
     }
 
     // A group is fully settled only when every member's net balance is zero.
+    const currentUserId = members.find(member => member.currentUser)?.userId;
     const settled = members.every((member) => Number(member.netBalance) === 0);
 
     return (
@@ -196,6 +230,8 @@ function GroupPage() {
                         <Link className="button button-small" to={`/groups/${id}/expenses/new`}>Add an expense</Link>
                     </div>
 
+                    {deleteError && <p className="error" role="alert">{deleteError}</p>}
+
                     {/* AC7: every member sees the expense with amount, description, payer and date */}
                     {/* #8 AC7: Expenses can be edited */}
                     {expenses.length === 0 ? (
@@ -206,6 +242,17 @@ function GroupPage() {
                                 <li key={expense.id}>
                                     <Link className="expense-edit"
                                           to={`/groups/${id}/expenses/${expense.id}/edit`}>Edit</Link>
+                                    {currentUserId != null && expense.createdByUserId === currentUserId && (
+                                        <div className="expense-actions">
+                                            <Link className="action"
+                                                  to={`/groups/${id}/expenses/${expense.id}/edit`}>Edit</Link>
+                                            <button className="expense-delete-link" type="button" onClick={() => void handleDelete(expense)}
+                                                    disabled={deleting !== null}
+                                                    aria-label={`Delete ${expense.description}`}>
+                                                {deleting === expense.id ? 'Deleting...' : 'Delete'}
+                                            </button>
+                                        </div>
+                                    )}
                                     <span className="expense-description">{expense.description}</span>
                                     <span className="expense-meta">
                                         {expense.paidByUsername} paid on {expense.expenseDate}
@@ -228,6 +275,11 @@ function GroupPage() {
                         <h2>Recurring expenses</h2>
                         <Link className="button button-small" to={`/groups/${id}/recurring-expenses/new`}>Add recurring expense</Link>
                     </div>
+                <ExpenseActivity groupId={group.id} refreshVersion={expenseVersion} />
+
+                <section>
+                    <h2>Recurring expenses</h2>
+                    <Link className="action" to={`/groups/${id}/recurring-expenses/new`}>Add recurring expense</Link>
 
                     <RecurringExpenseList recurringExpenses={recurringExpenses}
                                           error={recurringExpensesError}
@@ -258,7 +310,7 @@ function GroupPage() {
 
                 <section className="panel group-settlement">
                     <h2>Settlement plan</h2>
-                    <SettlementView groupId={group.id} baseCurrency={group.baseCurrency}/>
+                    <SettlementView groupId={group.id} baseCurrency={group.baseCurrency} refreshVersion={expenseVersion}/>
                 </section>
 
                 {/* #12: export sits with the other group-wide actions in the right-hand column */}
