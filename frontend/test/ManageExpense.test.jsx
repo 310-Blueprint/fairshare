@@ -21,7 +21,7 @@ vi.mock('../src/api/currencies', () => ({
 }));
 
 const MEMBERS = [
-    { userId: 1, username: 'alice', email: 'alice@test.com' },
+    { userId: 1, username: 'alice', email: 'alice@test.com', currentUser: true },
     { userId: 2, username: 'bob', email: 'bob@test.com' },
     { userId: 3, username: 'carol', email: 'carol@test.com' },
 ];
@@ -35,6 +35,7 @@ beforeEach(() => {
     ] });
     getExpense.mockResolvedValue({ expense: {
         id: 9,
+        createdByUserId: 1,
         amount: '42.50',
         description: 'Groceries',
         paidByUserId: 2,
@@ -68,6 +69,7 @@ it('preselects the expense participants', async () => {
 it('#14 AC1: edits the amount and currency that were originally entered', async () => {
     getExpense.mockResolvedValue({ expense: {
         id: 9,
+        createdByUserId: 1,
         amount: '34.11',
         description: 'Dinner',
         paidByUserId: 1,
@@ -125,7 +127,7 @@ it('AC3: split across a subset of members', async () => {
 
 it('#16 AC1: shows the saved category and saves a changed one', async () => {
     getExpense.mockResolvedValue({ expense: {
-        id: 9, amount: '42.50', description: 'Groceries', paidByUserId: 2, expenseDate: '2024-06-15',
+        id: 9, createdByUserId: 1, amount: '42.50', description: 'Groceries', paidByUserId: 2, expenseDate: '2024-06-15',
         participantUserIds: [1, 2], originalAmount: '42.50', originalCurrency: 'NZD', category: 'GROCERIES',
     } });
     const user = userEvent.setup();
@@ -149,5 +151,16 @@ it('AC6: at least one participant must be selected', async () => {
     await user.click(screen.getByLabelText('bob'));
     await user.click(screen.getByRole('button', { name: 'Save expense' }));
     expect(await screen.findByText('At least one participant must be selected.')).toBeInTheDocument();
+    expect(updateExpense).not.toHaveBeenCalled();
+});
+
+it('hides all edit controls from another member visiting the edit URL directly', async () => {
+    getGroupMembers.mockResolvedValue({ members: MEMBERS.map(member => ({
+        ...member, currentUser: member.userId === 2,
+    })) });
+    renderPage();
+    expect(await screen.findByRole('alert')).toHaveTextContent('Only the creator');
+    expect(screen.queryByLabelText('Amount')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Save expense' })).not.toBeInTheDocument();
     expect(updateExpense).not.toHaveBeenCalled();
 });

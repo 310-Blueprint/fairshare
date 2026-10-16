@@ -156,6 +156,7 @@ public class ExpenseGroupService {
         return calculateSettlements(balances);
     }
 
+    @Transactional
     public List<SettlementLine> computeSettlement(Long groupId, Long currentUserId, SettlementRequest request) {
         ExpenseGroup group = requireMemberGroup(groupId, currentUserId);
 

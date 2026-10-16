@@ -13,6 +13,7 @@ npm-debug.log*
 # Local environment
 .env
 .env.*
+!backend/.env.example
 cookies.txt
 
 # IDEs
