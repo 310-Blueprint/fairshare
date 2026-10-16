@@ -61,7 +61,7 @@ public class RecurringExpenseService {
 
         RecurringExpense recurringExpense = new RecurringExpense(
                 group, payer.getUser(), request.amount(), request.description().trim(),
-                request.frequency(), request.startDate(), request.endDate());
+                request.frequency(), request.startDate(), request.endDate(), group.getMember(currentUserId).getUser());
         RecurringExpense saved = recurringExpenseRepository.save(recurringExpense);
 
         saveParticipants(saved, members);

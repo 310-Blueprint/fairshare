@@ -60,6 +60,8 @@ class ExpenseIntegrationTest {
     @Autowired ExpenseService expenseService;
     @Autowired ExpenseGroupRepository groupRepository;
     @Autowired ExpenseRepository expenseRepository;
+    @org.springframework.test.context.bean.override.mockito.MockitoSpyBean
+    nz.ac.auckland.se310.fairshare.repository.ExpenseAuditRepository expenseAuditRepository;
     @Autowired ExpenseShareRepository expenseShareRepository;
     @Autowired SettlementRepository settlementRepository;
     @Autowired UserRepository userRepository;
@@ -300,6 +302,219 @@ class ExpenseIntegrationTest {
         assertThat(violations(request))
                 .extractingByKey("participantUserIds", list(String.class))
                 .containsExactly("At least one participant is required");
+    }
+
+    @Test
+    void historyAc5_reopenedPlanUsesEditedExpenseEvenWhenClientSendsOldBalances() {
+        var created = expenseService.createExpense(groupId, new CreateExpenseRequest(
+                new BigDecimal("40.00"), "Dinner", aliceId, List.of(aliceId, bobId), null), aliceId);
+        var staleRequest = new SettlementRequest(groupService.getBalances(groupId, bobId));
+        assertThat(groupService.computeSettlement(groupId, bobId, staleRequest))
+                .containsExactly(new SettlementLine(bobId, aliceId, new BigDecimal("20.00")));
+        expenseService.updateExpense(groupId, new CreateExpenseRequest(new BigDecimal("10.00"),
+                "Dinner", aliceId, List.of(aliceId, bobId), null), aliceId, created.id());
+        assertThat(groupService.computeSettlement(groupId, bobId, staleRequest))
+                .containsExactly(new SettlementLine(bobId, aliceId, new BigDecimal("5.00")));
+        assertThat(settlementRepository.findByGroupId(groupId)).hasSize(1)
+                .allSatisfy(payment -> assertThat(payment.getAmount()).isEqualByComparingTo("5.00"));
+    }
+
+    @Test
+    void historyAc5_deletedLastExpenseClearsTheOldPendingPlan() {
+        var created = expenseService.createExpense(groupId, new CreateExpenseRequest(
+                new BigDecimal("40.00"), "Dinner", aliceId, List.of(aliceId, bobId), null), aliceId);
+        var staleRequest = new SettlementRequest(groupService.getBalances(groupId, bobId));
+        assertThat(groupService.computeSettlement(groupId, bobId, staleRequest)).hasSize(1);
+        expenseService.deleteExpense(groupId, created.id(), aliceId);
+        assertThat(groupService.computeSettlement(groupId, bobId, staleRequest)).isEmpty();
+        assertThat(settlementRepository.findByGroupId(groupId)).isEmpty();
+        assertThat(groupService.getBalances(groupId, bobId))
+                .allSatisfy(balance -> assertThat(balance.balance()).isEqualByComparingTo("0.00"));
+    }
+
+    @Test
+    void historyAc5_correctedPlanPreservesAlreadyPaidTransfers() {
+        var created = expenseService.createExpense(groupId, new CreateExpenseRequest(
+                new BigDecimal("40.00"), "Dinner", aliceId, List.of(aliceId, bobId), null), aliceId);
+        var request = new SettlementRequest(List.of());
+        groupService.computeSettlement(groupId, bobId, request);
+        groupService.markSettlementPaid(groupId, bobId, aliceId, bobId);
+        expenseService.updateExpense(groupId, new CreateExpenseRequest(new BigDecimal("10.00"),
+                "Dinner", aliceId, List.of(aliceId, bobId), null), aliceId, created.id());
+        assertThat(groupService.computeSettlement(groupId, bobId, request))
+                .containsExactly(new SettlementLine(aliceId, bobId, new BigDecimal("15.00")));
+        expenseService.deleteExpense(groupId, created.id(), aliceId);
+        assertThat(groupService.computeSettlement(groupId, bobId, request))
+                .containsExactly(new SettlementLine(aliceId, bobId, new BigDecimal("20.00")));
+        var paid = settlementRepository.findByGroupId(groupId).stream()
+                .filter(payment -> payment.getSettlementDate() != null).toList();
+        assertThat(paid).hasSize(1);
+        assertThat(paid.getFirst().getAmount()).isEqualByComparingTo("20.00");
+        assertThat(paid.getFirst().getFromUser().getId()).isEqualTo(bobId);
+    }
+
+    @Test
+    void historyAc4_activityRecordsEveryEditAndSurvivesDeletionForOtherMembers() {
+        var created = expenseService.createExpense(groupId, new CreateExpenseRequest(
+                new BigDecimal("40.00"), "Dinner", bobId, List.of(aliceId, bobId), null), aliceId);
+        var start = java.time.Instant.now().minusSeconds(1);
+        var update = new CreateExpenseRequest(new BigDecimal("30.00"), "Corrected dinner", bobId,
+                List.of(aliceId, bobId), null);
+        expenseService.updateExpense(groupId, update, aliceId, created.id());
+        expenseService.updateExpense(groupId, new CreateExpenseRequest(new BigDecimal("31.00"),
+                "Corrected dinner", bobId, List.of(aliceId, bobId), null), aliceId, created.id());
+        expenseService.deleteExpense(groupId, created.id(), aliceId);
+        var events = expenseService.getExpenseActivity(groupId, bobId);
+        assertThat(events).hasSize(3);
+        assertThat(events).extracting(event -> event.action().name())
+                .containsExactly("DELETED", "EDITED", "EDITED");
+        assertThat(events).allSatisfy(event -> {
+            assertThat(event.actorUserId()).isEqualTo(aliceId);
+            assertThat(event.actorUsername()).isEqualTo("alice");
+            assertThat(event.expenseId()).isEqualTo(created.id());
+            assertThat(event.expenseDescription()).isEqualTo("Corrected dinner");
+            assertThat(event.changedAt()).isBetween(start, java.time.Instant.now().plusSeconds(1));
+        });
+        assertThat(expenseRepository.existsById(created.id())).isFalse();
+        var otherGroup = groupService.createGroup(new CreateGroupRequest("Other", null), aliceId).id();
+        assertThat(expenseService.getExpenseActivity(otherGroup, aliceId)).isEmpty();
+        assertThatThrownBy(() -> expenseService.getExpenseActivity(groupId, carolId))
+                .isInstanceOf(GroupAccessDeniedException.class);
+    }
+
+    @Test
+    void historyAc4_unchangedSavePreservesSharesBalancesAndActivity() {
+        var created = expenseService.createExpense(groupId, new CreateExpenseRequest(
+                new BigDecimal("40.00"), "Dinner", bobId, List.of(aliceId, bobId), null), aliceId);
+        var original = expenseService.getExpense(groupId, created.id(), aliceId);
+        var before = balances();
+        var shareIds = expenseShareRepository.findByExpenseId(created.id()).stream()
+                .map(share -> share.getId()).toList();
+        expenseService.updateExpense(groupId, new CreateExpenseRequest(new BigDecimal("40.000"),
+                " Dinner ", bobId, List.of(bobId, aliceId, bobId), original.expenseDate(), " nzd "),
+                aliceId, created.id());
+        assertThat(expenseService.getExpense(groupId, created.id(), aliceId)).isEqualTo(original);
+        assertThat(balances()).isEqualTo(before);
+        assertThat(expenseShareRepository.findByExpenseId(created.id()))
+                .extracting(share -> share.getId()).containsExactlyElementsOf(shareIds);
+        assertThat(expenseService.getExpenseActivity(groupId, aliceId)).isEmpty();
+    }
+
+    @Test
+    void historyAc4_unchangedForeignSaveDoesNotLookUpRatesOrChangeRecordedConversion() {
+        var created = expenseService.createExpense(groupId, new CreateExpenseRequest(
+                new BigDecimal("20.00"), "Dinner", bobId, List.of(aliceId, bobId), null, "USD"), aliceId);
+        var original = expenseService.getExpense(groupId, created.id(), aliceId);
+        exchangeRates.reset(); // A lookup would now fail; unchanged inputs need no rate lookup.
+        expenseService.updateExpense(groupId, new CreateExpenseRequest(new BigDecimal("20.00"),
+                "Dinner", bobId, List.of(aliceId, bobId), original.expenseDate(), "USD"), aliceId, created.id());
+        assertThat(expenseService.getExpense(groupId, created.id(), aliceId)).isEqualTo(original);
+        assertThat(expenseService.getExpenseActivity(groupId, aliceId)).isEmpty();
+        // A genuine description-only change still creates an edit event.
+        exchangeRates.setRate("USD", "NZD", "1.7056");
+        expenseService.updateExpense(groupId, new CreateExpenseRequest(new BigDecimal("20.00"),
+                "Dinner corrected", bobId, List.of(aliceId, bobId), original.expenseDate(), "USD"), aliceId, created.id());
+        assertThat(expenseService.getExpenseActivity(groupId, aliceId)).hasSize(1);
+    }
+
+    @Test
+    void historyAc4_rejectedChangesDoNotProduceAuditEvents() {
+        var created = expenseService.createExpense(groupId, new CreateExpenseRequest(
+                new BigDecimal("40.00"), "Dinner", bobId, List.of(aliceId, bobId), null), aliceId);
+        var update = new CreateExpenseRequest(new BigDecimal("99.00"), "Invalid edit", bobId,
+                List.of(aliceId, bobId), null);
+        assertThatThrownBy(() -> expenseService.updateExpense(groupId, update, bobId, created.id()))
+                .isInstanceOf(nz.ac.auckland.se310.fairshare.exception.ExpenseAccessDeniedException.class);
+        assertThatThrownBy(() -> expenseService.deleteExpense(groupId, created.id(), bobId))
+                .isInstanceOf(nz.ac.auckland.se310.fairshare.exception.ExpenseAccessDeniedException.class);
+        assertThat(expenseService.getExpenseActivity(groupId, aliceId)).isEmpty();
+    }
+
+    @Test
+    void historyAc4_auditFailureRollsBackEditAndDeletionIncludingBalancesAndShares() {
+        var created = expenseService.createExpense(groupId, new CreateExpenseRequest(
+                new BigDecimal("40.00"), "Dinner", bobId, List.of(aliceId, bobId), null), aliceId);
+        var original = expenseService.getExpense(groupId, created.id(), aliceId);
+        var before = balances();
+        org.mockito.Mockito.doThrow(new IllegalStateException("Audit storage unavailable"))
+                .when(expenseAuditRepository).save(org.mockito.ArgumentMatchers.any(
+                        nz.ac.auckland.se310.fairshare.model.ExpenseAudit.class));
+        var update = new CreateExpenseRequest(new BigDecimal("99.00"), "Changed", aliceId,
+                List.of(aliceId), null);
+        assertThatThrownBy(() -> expenseService.updateExpense(groupId, update, aliceId, created.id()))
+                .isInstanceOf(IllegalStateException.class);
+        assertThat(expenseService.getExpense(groupId, created.id(), aliceId)).isEqualTo(original);
+        assertThat(balances()).isEqualTo(before);
+        assertThatThrownBy(() -> expenseService.deleteExpense(groupId, created.id(), aliceId))
+                .isInstanceOf(IllegalStateException.class);
+        assertThat(expenseService.getExpense(groupId, created.id(), aliceId)).isEqualTo(original);
+        assertThat(balances()).isEqualTo(before);
+        assertThat(expenseShareRepository.findByExpenseId(created.id()))
+                .extracting(share -> share.getShareAmount()).containsExactlyInAnyOrder(
+                        new BigDecimal("20.00"), new BigDecimal("20.00"));
+        assertThat(expenseService.getExpenseActivity(groupId, aliceId)).isEmpty();
+    }
+
+    @Test
+    void historyAc2_creatorDeletionRemovesSharesAndReversesOnlyThatExpense() {
+        var deleted = expenseService.createExpense(groupId, new CreateExpenseRequest(
+                new BigDecimal("40.00"), "Dinner", bobId, List.of(aliceId, bobId), null), aliceId);
+        var remaining = expenseService.createExpense(groupId, new CreateExpenseRequest(
+                new BigDecimal("10.00"), "Taxi", aliceId, List.of(aliceId, bobId), null), bobId);
+        expenseService.deleteExpense(groupId, deleted.id(), aliceId);
+        assertThat(expenseRepository.existsById(deleted.id())).isFalse();
+        assertThat(expenseShareRepository.findByExpenseId(deleted.id())).isEmpty();
+        assertThat(expenseRepository.existsById(remaining.id())).isTrue();
+        assertThat(expenseService.getExpensesForGroup(groupId, bobId))
+                .extracting(ExpenseResponse::id).containsExactly(remaining.id());
+        assertThat(balances()).containsOnly(Map.entry(aliceId, new BigDecimal("-5.00")),
+                Map.entry(bobId, new BigDecimal("5.00")));
+    }
+
+    @Test
+    void historyAc2_nonCreatorDeletionLeavesExpenseSharesAndBalancesUnchanged() {
+        var created = expenseService.createExpense(groupId, new CreateExpenseRequest(
+                new BigDecimal("40.00"), "Dinner", bobId, List.of(aliceId, bobId), null), aliceId);
+        var original = expenseService.getExpense(groupId, created.id(), bobId);
+        var before = balances();
+        var shares = expenseShareRepository.findByExpenseId(created.id()).stream()
+                .map(share -> share.getShareAmount()).toList();
+        assertThatThrownBy(() -> expenseService.deleteExpense(groupId, created.id(), bobId))
+                .isInstanceOf(nz.ac.auckland.se310.fairshare.exception.ExpenseAccessDeniedException.class);
+        assertThat(expenseService.getExpense(groupId, created.id(), bobId)).isEqualTo(original);
+        assertThat(balances()).isEqualTo(before);
+        assertThat(expenseShareRepository.findByExpenseId(created.id()))
+                .extracting(share -> share.getShareAmount()).containsExactlyElementsOf(shares);
+    }
+
+    @Test
+    void historyAc2_nonMembersAndWrongGroupCannotDeleteExpense() {
+        var created = expenseService.createExpense(groupId, new CreateExpenseRequest(
+                new BigDecimal("40.00"), "Dinner", bobId, List.of(aliceId, bobId), null), aliceId);
+        assertThatThrownBy(() -> expenseService.deleteExpense(groupId, created.id(), carolId))
+                .isInstanceOf(GroupAccessDeniedException.class);
+        var otherGroup = groupService.createGroup(new CreateGroupRequest("Other", null), aliceId).id();
+        assertThatThrownBy(() -> expenseService.deleteExpense(otherGroup, created.id(), aliceId))
+                .isInstanceOf(nz.ac.auckland.se310.fairshare.exception.ExpenseNotFoundException.class);
+        assertThat(expenseRepository.existsById(created.id())).isTrue();
+    }
+
+    @Test
+    void historyAc1_payerCannotEditAnotherMembersExpenseAndNothingChanges() {
+        ExpenseResponse created = expenseService.createExpense(groupId, new CreateExpenseRequest(
+                new BigDecimal("40.00"), "Dinner", bobId, List.of(aliceId, bobId), null), aliceId);
+        var before = balances();
+        var original = expenseService.getExpense(groupId, created.id(), bobId);
+        assertThat(created.createdByUserId()).isEqualTo(aliceId);
+        var update = new CreateExpenseRequest(new BigDecimal("100.00"), "Changed", aliceId,
+                List.of(aliceId), null);
+        assertThatThrownBy(() -> expenseService.updateExpense(groupId, update, bobId, created.id()))
+                .isInstanceOf(nz.ac.auckland.se310.fairshare.exception.ExpenseAccessDeniedException.class);
+        assertThat(expenseService.getExpense(groupId, created.id(), bobId)).isEqualTo(original);
+        assertThat(balances()).isEqualTo(before);
+        // Changing the payer never transfers ownership.
+        expenseService.updateExpense(groupId, update, aliceId, created.id());
+        assertThat(expenseService.getExpense(groupId, created.id(), aliceId).createdByUserId()).isEqualTo(aliceId);
     }
 
     @Test

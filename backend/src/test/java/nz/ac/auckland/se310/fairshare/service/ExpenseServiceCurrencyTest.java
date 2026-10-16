@@ -3,12 +3,14 @@ package nz.ac.auckland.se310.fairshare.service;
 import nz.ac.auckland.se310.fairshare.dto.CreateExpenseRequest;
 import nz.ac.auckland.se310.fairshare.dto.ExpenseResponse;
 import nz.ac.auckland.se310.fairshare.exception.InvalidExpenseAmountException;
+import nz.ac.auckland.se310.fairshare.exception.ExpenseAccessDeniedException;
 import nz.ac.auckland.se310.fairshare.exception.UnsupportedCurrencyException;
 import nz.ac.auckland.se310.fairshare.model.Expense;
 import nz.ac.auckland.se310.fairshare.model.ExpenseGroup;
 import nz.ac.auckland.se310.fairshare.model.User;
 import nz.ac.auckland.se310.fairshare.repository.ExpenseGroupRepository;
 import nz.ac.auckland.se310.fairshare.repository.ExpenseRepository;
+import nz.ac.auckland.se310.fairshare.repository.ExpenseAuditRepository;
 import nz.ac.auckland.se310.fairshare.repository.ExpenseShareRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,6 +30,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 /**
@@ -42,6 +45,7 @@ class ExpenseServiceCurrencyTest {
     private static final LocalDate EXPENSE_DATE = LocalDate.of(2026, Month.AUGUST, 1);
     private static final BigDecimal USD_TO_NZD = new BigDecimal("1.7056");
 
+    private final ExpenseAuditRepository expenseAuditRepository = mock(ExpenseAuditRepository.class);
     private final ExpenseRepository expenseRepository = mock(ExpenseRepository.class);
     private final ExpenseGroupRepository groupRepository = mock(ExpenseGroupRepository.class);
     private final ExpenseShareRepository expenseShareRepository = mock(ExpenseShareRepository.class);
@@ -66,7 +70,60 @@ class ExpenseServiceCurrencyTest {
             return from.equals(to) ? BigDecimal.ONE : USD_TO_NZD;
         };
         expenseService = new ExpenseService(expenseRepository, groupRepository, expenseShareRepository,
-                new CurrencyService(), stubRates);
+                new CurrencyService(), stubRates, expenseAuditRepository);
+    }
+
+    @Test
+    void recurringOccurrenceBelongsToScheduleCreatorRatherThanPayer() {
+        var schedule = new nz.ac.auckland.se310.fairshare.model.RecurringExpense(group,
+                group.getMember(BOB).getUser(), new BigDecimal("20.00"), "Rent",
+                nz.ac.auckland.se310.fairshare.model.RecurringExpense.Frequency.MONTHLY,
+                EXPENSE_DATE, null, group.getMember(ALICE).getUser());
+        var result = expenseService.createRecurringOccurrence(schedule, group.getMember(BOB),
+                List.of(group.getMember(ALICE), group.getMember(BOB)), EXPENSE_DATE);
+        assertThat(result.createdByUserId()).isEqualTo(ALICE);
+        assertThat(result.paidByUserId()).isEqualTo(BOB);
+    }
+
+    @Test
+    void creatorIsAuthenticatedUserEvenWhenAnotherMemberPays() {
+        CreateExpenseRequest request = new CreateExpenseRequest(new BigDecimal("20.00"), "Dinner",
+                BOB, List.of(ALICE, BOB), EXPENSE_DATE, "NZD");
+        ExpenseResponse result = expenseService.createExpense(GROUP_ID, request, ALICE);
+        assertThat(result.createdByUserId()).isEqualTo(ALICE);
+        assertThat(result.paidByUserId()).isEqualTo(BOB);
+    }
+
+    @Test
+    void nonCreatorEditIsRejectedBeforeExpenseSharesOrBalancesChange() {
+        Expense expense = new Expense(group, group.getMember(BOB).getUser(), new BigDecimal("20.00"),
+                "Dinner", EXPENSE_DATE, null, group.getMember(ALICE).getUser());
+        when(groupRepository.findByIdAndMembersUserId(GROUP_ID, BOB)).thenReturn(Optional.of(group));
+        when(expenseRepository.findByIdAndGroupId(9L, GROUP_ID)).thenReturn(Optional.of(expense));
+        assertThatThrownBy(() -> expenseService.updateExpense(GROUP_ID, request("99.00", "USD"), BOB, 9L))
+                .isInstanceOf(ExpenseAccessDeniedException.class);
+        assertThat(expense.getAmount()).isEqualByComparingTo("20.00");
+        assertThat(expense.getDescription()).isEqualTo("Dinner");
+        assertThat(group.getMember(ALICE).getNetBalance()).isEqualByComparingTo("0");
+        assertThat(group.getMember(BOB).getNetBalance()).isEqualByComparingTo("0");
+        verify(expenseRepository, never()).save(any());
+        verifyNoInteractions(expenseShareRepository);
+        assertThat(rateLookups).isEmpty();
+
+    }
+
+    @Test
+    void creatorCanChangePayerAndRetainsOwnership() {
+        Expense expense = new Expense(group, group.getMember(ALICE).getUser(), new BigDecimal("20.00"),
+                "Dinner", EXPENSE_DATE);
+        when(expenseRepository.findByIdAndGroupId(9L, GROUP_ID)).thenReturn(Optional.of(expense));
+        CreateExpenseRequest request = new CreateExpenseRequest(new BigDecimal("30.00"), "Corrected",
+                BOB, List.of(ALICE, BOB), EXPENSE_DATE, "NZD");
+        expenseService.updateExpense(GROUP_ID, request, ALICE, 9L);
+        assertThat(expense.getPaidBy().getId()).isEqualTo(BOB);
+        assertThat(expense.getCreatedBy().getId()).isEqualTo(ALICE);
+        assertThat(expense.getAmount()).isEqualByComparingTo("30.00");
+        verify(expenseRepository).save(expense);
     }
 
     @Test
@@ -130,7 +187,7 @@ class ExpenseServiceCurrencyTest {
     @Test
     void amountWorthLessThanACentOnceConvertedIsRejected() {
         ExpenseService tinyRates = new ExpenseService(expenseRepository, groupRepository, expenseShareRepository,
-                new CurrencyService(), (from, to, date) -> new BigDecimal("0.0001"));
+                new CurrencyService(), (from, to, date) -> new BigDecimal("0.0001"), expenseAuditRepository);
         CreateExpenseRequest request = request("10.00", "IDR");
 
         assertThatThrownBy(() -> tinyRates.createExpense(GROUP_ID, request, ALICE))
@@ -167,7 +224,7 @@ class ExpenseServiceCurrencyTest {
         krwGroup.addMember(group.getMember(BOB).getUser());
         when(groupRepository.findByIdAndMembersUserId(GROUP_ID, ALICE)).thenReturn(Optional.of(krwGroup));
         return new ExpenseService(expenseRepository, groupRepository, expenseShareRepository,
-                new CurrencyService(), (from, to, date) -> from.equals(to) ? BigDecimal.ONE : new BigDecimal("1350"));
+                new CurrencyService(), (from, to, date) -> from.equals(to) ? BigDecimal.ONE : new BigDecimal("1350"), expenseAuditRepository);
     }
 
     private CreateExpenseRequest request(String amount, String currency) {

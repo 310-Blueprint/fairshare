@@ -1,10 +1,10 @@
-import { it, expect, vi, beforeEach } from 'vitest';
+import { it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import GroupPage from '../src/pages/GroupPage.jsx';
-import { exportGroup, getGroup, getGroupBalances, getGroupMembers } from '../src/api/groups';
-import { getExpenses } from '../src/api/expenses';
+import { exportGroup, getGroup, getGroupBalances, getGroupMembers, computeSettlement } from '../src/api/groups';
+import { getExpenses, deleteExpense, getExpenseActivity } from '../src/api/expenses';
 import { getRecurringExpenses } from '../src/api/recurringExpenses';
 
 vi.mock('../src/api/groups', () => ({
@@ -19,6 +19,8 @@ vi.mock('../src/api/groups', () => ({
 
 vi.mock('../src/api/expenses', () => ({
     getExpenses: vi.fn(),
+    deleteExpense: vi.fn(),
+    getExpenseActivity: vi.fn(),
 }));
 
 vi.mock('../src/api/recurringExpenses', () => ({
@@ -36,15 +38,22 @@ const GROUP = {
 
 beforeEach(() => {
     vi.clearAllMocks();
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
     getGroup.mockResolvedValue(GROUP);
     getExpenses.mockResolvedValue({ expenses: [] });
+    getExpenseActivity.mockResolvedValue({ activity: [] });
     getRecurringExpenses.mockResolvedValue({ recurringExpenses: [] });
     getGroupBalances.mockResolvedValue([]);
+    computeSettlement.mockResolvedValue([]);
     getGroupMembers.mockResolvedValue({
         members: [
             { userId: 1, username: 'alice', email: 'alice@test.com', netBalance: '0.00', currentUser: true },
         ],
     });
+});
+
+afterEach(() => {
+    vi.restoreAllMocks();
 });
 
 function renderPage() {
@@ -251,4 +260,129 @@ it('#12: a failed export shows the error and leaves the buttons usable', async (
     expect(exportGroup).toHaveBeenCalledWith('1', 'pdf');
     expect(await screen.findByText('You are not a member of this group')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Export PDF' })).toBeEnabled();
+});
+
+
+it('shows Edit only for expenses created by the current user, regardless of payer', async () => {
+    getExpenses.mockResolvedValue({ expenses: [
+        { id: 10, createdByUserId: 1, paidByUserId: 2, paidByUsername: 'bob',
+          amount: '10.00', description: 'My entry', expenseDate: '2026-10-14' },
+        { id: 11, createdByUserId: 2, paidByUserId: 1, paidByUsername: 'alice',
+          amount: '20.00', description: 'Their entry', expenseDate: '2026-10-14' },
+    ] });
+    renderPage();
+    const edit = await screen.findByRole('link', { name: 'Edit' });
+    expect(edit).toHaveAttribute('href', '/groups/1/expenses/10/edit');
+    expect(screen.getAllByRole('link', { name: 'Edit' })).toHaveLength(1);
+});
+
+
+function mockOwnedAndOtherExpenses() {
+    getExpenses.mockResolvedValue({ expenses: [
+        { id: 10, createdByUserId: 1, paidByUserId: 2, paidByUsername: 'bob',
+          amount: '10.00', description: 'My entry', expenseDate: '2026-10-14' },
+        { id: 11, createdByUserId: 2, paidByUserId: 1, paidByUsername: 'alice',
+          amount: '20.00', description: 'Their entry', expenseDate: '2026-10-14' },
+    ] });
+}
+
+it('shows Delete only to the creator and removes a successfully deleted expense', async () => {
+    mockOwnedAndOtherExpenses();
+    deleteExpense.mockResolvedValue({});
+    renderPage();
+    const button = await screen.findByRole('button', { name: 'Delete My entry' });
+    expect(screen.queryByRole('button', { name: 'Delete Their entry' })).not.toBeInTheDocument();
+    getGroupMembers.mockResolvedValue({ members: [
+        { userId: 1, username: 'alice', netBalance: '7.00', currentUser: true },
+    ] });
+    await userEvent.click(button);
+    expect(deleteExpense).toHaveBeenCalledWith('1', 10);
+    expect(await screen.findByText('alice owes NZD 7.00')).toBeInTheDocument();
+    expect(screen.queryByText('My entry')).not.toBeInTheDocument();
+    expect(screen.getByText('Their entry')).toBeInTheDocument();
+});
+
+it('keeps the expense visible when deletion is rejected and displays the server error', async () => {
+    mockOwnedAndOtherExpenses();
+    deleteExpense.mockResolvedValue({ error: 'Only the creator of this expense can delete it' });
+    renderPage();
+    await userEvent.click(await screen.findByRole('button', { name: 'Delete My entry' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Only the creator');
+    expect(screen.getByText('My entry')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Delete My entry' })).toBeEnabled();
+});
+
+
+it('AC3: cancelling the confirmation leaves the expense and balances unchanged', async () => {
+    mockOwnedAndOtherExpenses();
+    window.confirm.mockReturnValue(false);
+    renderPage();
+    const button = await screen.findByRole('button', { name: 'Delete My entry' });
+    const memberLoads = getGroupMembers.mock.calls.length;
+    await userEvent.click(button);
+    expect(window.confirm).toHaveBeenCalledWith(
+        'Delete "My entry"? This will remove the expense and update the group\'s balances.'
+    );
+    expect(deleteExpense).not.toHaveBeenCalled();
+    expect(getGroupMembers).toHaveBeenCalledTimes(memberLoads);
+    expect(screen.getByText('My entry')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Delete My entry' })).toBeEnabled();
+});
+
+it('AC3: cancelling then explicitly confirming sends only one deletion request', async () => {
+    mockOwnedAndOtherExpenses();
+    window.confirm.mockReturnValueOnce(false).mockReturnValueOnce(true);
+    deleteExpense.mockResolvedValue({});
+    renderPage();
+    const button = await screen.findByRole('button', { name: 'Delete My entry' });
+    await userEvent.click(button);
+    expect(deleteExpense).not.toHaveBeenCalled();
+    await userEvent.click(button);
+    expect(window.confirm).toHaveBeenCalledTimes(2);
+    expect(deleteExpense).toHaveBeenCalledTimes(1);
+    expect(deleteExpense).toHaveBeenCalledWith('1', 10);
+    expect(screen.queryByText('My entry')).not.toBeInTheDocument();
+});
+
+
+it('refreshes group activity after confirmed deletion', async () => {
+    mockOwnedAndOtherExpenses();
+    deleteExpense.mockResolvedValue({});
+    renderPage();
+    expect(await screen.findByText('No expense edits or deletions yet.')).toBeInTheDocument();
+    getExpenseActivity.mockResolvedValue({ activity: [{
+        id: 1, expenseId: 10, expenseDescription: 'My entry', actorUsername: 'alice',
+        action: 'DELETED', changedAt: '2026-10-14T08:00:00Z',
+    }] });
+    await userEvent.click(screen.getByRole('button', { name: 'Delete My entry' }));
+    expect(await screen.findByText('alice deleted expense "My entry" (#10)')).toBeInTheDocument();
+    expect(screen.queryByText('My entry')).not.toBeInTheDocument();
+});
+
+it('an activity loading error leaves the group history visible', async () => {
+    mockOwnedAndOtherExpenses();
+    getExpenseActivity.mockResolvedValue({ error: 'Activity unavailable' });
+    renderPage();
+    expect(await screen.findByText('Activity unavailable')).toBeInTheDocument();
+    expect(screen.getByText('My entry')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Edit' })).toBeInTheDocument();
+});
+
+
+it('AC5: deleting an expense refreshes the visible settlement plan without navigating away', async () => {
+    mockOwnedAndOtherExpenses();
+    deleteExpense.mockResolvedValue({});
+    getGroupBalances.mockResolvedValue([{ userId: 1, balance: '-20.00' }, { userId: 2, balance: '20.00' }]);
+    getGroupMembers.mockResolvedValue({ members: [
+        { userId: 1, username: 'alice', netBalance: '-20.00', currentUser: true },
+        { userId: 2, username: 'bob', netBalance: '20.00' },
+    ] });
+    computeSettlement.mockResolvedValue([{ fromUserId: 2, toUserId: 1, amount: '20.00' }]);
+    renderPage();
+    expect(await screen.findByText('bob pays alice: NZD 20.00')).toBeInTheDocument();
+    getGroupBalances.mockResolvedValue([{ userId: 1, balance: '-5.00' }, { userId: 2, balance: '5.00' }]);
+    computeSettlement.mockResolvedValue([{ fromUserId: 2, toUserId: 1, amount: '5.00' }]);
+    await userEvent.click(screen.getByRole('button', { name: 'Delete My entry' }));
+    expect(await screen.findByText('bob pays alice: NZD 5.00')).toBeInTheDocument();
+    expect(screen.queryByText('bob pays alice: NZD 20.00')).not.toBeInTheDocument();
 });
