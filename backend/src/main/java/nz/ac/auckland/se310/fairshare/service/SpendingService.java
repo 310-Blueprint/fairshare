@@ -51,7 +51,7 @@ public class SpendingService {
     }
 
     /**
-     * #16: the user's share of each expense, in groups they belong to, for {@code month} (the
+     * #16: the user's share of each expense, including in groups they have left, for {@code month} (the
      * current month when null), plus the months leading up to it. Amounts are converted from each
      * group's currency into the user's home currency.
      */

@@ -87,15 +87,17 @@ describe('SpendingOverview', () => {
         expect(within(history).getByText('▼ Down NZD 15.00')).toHaveClass('change-down');
     });
 
-    it('AC2: the history is not charted until two months have spending', async () => {
+    it('AC2: a month with no spending before it is still charted against the empty months', async () => {
         getSpendingSummary.mockResolvedValue({ summary: {
             ...OCTOBER,
-            months: EMPTY_HISTORY.map((entry) => (entry.month === '2026-10' ? { ...entry, total: '65.00' } : entry)),
+            months: EMPTY_HISTORY.map((entry) => (entry.month === '2026-10'
+                ? { ...entry, total: '65.00', changeFromPreviousMonth: '65.00' }
+                : entry)),
         } });
         renderPage();
 
-        expect(await screen.findByText('Total for October 2026')).toBeInTheDocument();
-        expect(screen.queryByRole('region', { name: 'Month by month' })).not.toBeInTheDocument();
+        const history = await screen.findByRole('region', { name: 'Month by month' });
+        expect(within(history).getByText('▲ Up NZD 65.00')).toHaveClass('change-up');
     });
 
     it('AC2: choosing another month loads that month', async () => {

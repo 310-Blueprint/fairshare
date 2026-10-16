@@ -13,10 +13,10 @@ public interface ExpenseShareRepository extends JpaRepository<ExpenseShare, Long
     // #12: every share in a group in one query, so an export does not query once per expense
     List<ExpenseShare> findByExpenseGroupId(Long groupId);
 
-    // #16: the user's own shares of expenses dated within the period, only in groups they still
-    // belong to (AC4). The expense, its group and its payer are fetched in the same query.
-    @Query("select s from ExpenseShare s join fetch s.expense e join fetch e.group g join fetch e.paidBy "
-            + "where s.user.id = :userId and e.expenseDate between :from and :to "
-            + "and exists (select m from UserInGroup m where m.group = g and m.user.id = :userId)")
+    // #16: the user's own shares of expenses dated within the period (AC4), including groups they
+    // have since left, so past months keep what they spent. The expense, its group and its payer
+    // are fetched in the same query.
+    @Query("select s from ExpenseShare s join fetch s.expense e join fetch e.group join fetch e.paidBy "
+            + "where s.user.id = :userId and e.expenseDate between :from and :to")
     List<ExpenseShare> findSpendingShares(Long userId, LocalDate from, LocalDate to);
 }

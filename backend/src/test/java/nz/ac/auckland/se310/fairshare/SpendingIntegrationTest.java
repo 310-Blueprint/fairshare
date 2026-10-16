@@ -247,7 +247,7 @@ class SpendingIntegrationTest {
     }
 
     @Test
-    void ac4_groupsTheUserHasLeftAreNotIncluded() {
+    void ac4_groupsTheUserHasLeftStillCountTowardsTheirSpending() {
         // Alice pays for herself alone, so her balance is zero and she is free to leave.
         Long oldGroupId = groupService.createGroup(new CreateGroupRequest("Old flat", null), aliceId).id();
         groupService.addMember(oldGroupId, "bob@test.com", aliceId);
@@ -258,8 +258,8 @@ class SpendingIntegrationTest {
 
         SpendingSummaryResponse summary = spendingService.getSummary(aliceId, aliceId, OCTOBER);
 
-        assertThat(summary.total()).isEqualByComparingTo("10.00");
-        assertThat(summary.byGroup()).extracting(SpendingBreakdownLine::label).containsExactly("Flat");
+        assertThat(summary.total()).isEqualByComparingTo("40.00");
+        assertThat(summary.byGroup()).extracting(SpendingBreakdownLine::label).containsExactly("Old flat", "Flat");
     }
 
     /** Splits the amount equally between every member of the group. */

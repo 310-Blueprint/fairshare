@@ -113,14 +113,15 @@ function SpendingOverview() {
     }
 
     const hasSpending = summary && Number(summary.total) > 0;
-    // AC2: the history is only worth charting once there are two months to compare.
-    const monthsWithSpending = summary ? summary.months.filter((entry) => Number(entry.total) > 0).length : 0;
+    // AC2: the last six months are charted once any of them has spending, so a month with
+    // nothing before it is still compared against those empty months.
+    const hasHistory = summary ? summary.months.some((entry) => Number(entry.total) > 0) : false;
 
     return (
         <div className="page">
             <div className="card spending-card">
                 <h1>Your Spending</h1>
-                <p className="subtitle">Your share of expenses in the groups you belong to</p>
+                <p className="subtitle">Your share of expenses in your groups</p>
 
                 <div className="form-group">
                     <label htmlFor="month">Month</label>
@@ -151,7 +152,7 @@ function SpendingOverview() {
                             <p className="empty">No spending to display for {formatMonth(summary.month)}.</p>
                         )}
 
-                        {monthsWithSpending >= 2 && (
+                        {hasHistory && (
                             <MonthlyChart months={summary.months} currency={summary.currency} />
                         )}
                     </>
