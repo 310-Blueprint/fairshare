@@ -64,6 +64,11 @@ function IndividualDebts() {
                         </li>
                     ))}
                 </ul>
+
+                {/* #83: the groups overview is the home page now, and this page is reached from it */}
+                <p className="card-footer">
+                    <Link to="/groups">Back to your groups</Link>
+                </p>
             </div>
         </div>
     );
