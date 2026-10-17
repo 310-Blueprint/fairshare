@@ -21,6 +21,7 @@ import IndividualDebts from './pages/IndividualDebts.jsx';
 import AddIndividualDebt from './pages/AddIndividualDebt.jsx';
 import IndividualDebtBalance from './pages/IndividualDebtBalance.jsx';
 import EditIndividualDebt from './pages/EditIndividualDebt.jsx';
+import SpendingOverview from './pages/SpendingOverview.jsx';
 
 /** Sends visitors without a session to the login page before the route renders. */
 async function requireAuth() {
@@ -116,6 +117,11 @@ const router = createBrowserRouter([
             {
                 path: '/debts/:otherUserId/entries/:entryId/edit',
                 element: <EditIndividualDebt/>,
+                loader: requireAuth
+            },
+            {
+                path: '/spending',
+                element: <SpendingOverview/>,
                 loader: requireAuth
             }
         ]

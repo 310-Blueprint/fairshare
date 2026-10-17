@@ -33,6 +33,7 @@ function AddExpense() {
     const [currencies, setCurrencies] = useState([]);
     const [currenciesLoading, setCurrenciesLoading] = useState(true);
     const [description, setDescription] = useState('');
+    const [category, setCategory] = useState('');   // #16 AC1: optional
     const [expenseDate, setExpenseDate] = useState(today());   // AC6
     const [submitting, setSubmitting] = useState(false);
     const [participantUserIds, setParticipantUserIds] = useState([]);  // #8 AC3
@@ -83,6 +84,7 @@ function AddExpense() {
                 amount,
                 currency,
                 description,
+                category: category || null,
                 paidByUserId: Number(paidByUserId),
                 expenseDate,
                 participantUserIds: participantUserIds.map(Number)
@@ -129,6 +131,7 @@ function AddExpense() {
                     currency={currency}
                     currencies={currencies}
                     description={description}
+                    category={category}
                     paidByUserId={paidByUserId}
                     expenseDate={expenseDate}
                     participantUserIds={participantUserIds}
@@ -138,6 +141,7 @@ function AddExpense() {
                     onAmountChange={setAmount}
                     onCurrencyChange={setCurrency}
                     onDescriptionChange={setDescription}
+                    onCategoryChange={setCategory}
                     onPaidByUserIdChange={setPaidByUserId}
                     onExpenseDateChange={setExpenseDate}
                     onParticipantUserIdsChange={setParticipantUserIds}

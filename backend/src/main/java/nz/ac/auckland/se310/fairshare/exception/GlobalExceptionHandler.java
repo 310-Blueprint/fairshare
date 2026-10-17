@@ -145,4 +145,11 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
                 .body(Map.of(ERROR_KEY, ex.getMessage()));
     }
+
+    // #16 AC4
+    @ExceptionHandler(SpendingAccessDeniedException.class)
+    public ResponseEntity<Map<String, String>> handleSpendingAccessDenied(SpendingAccessDeniedException ex) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(Map.of(ERROR_KEY, ex.getMessage()));
+    }
 }
