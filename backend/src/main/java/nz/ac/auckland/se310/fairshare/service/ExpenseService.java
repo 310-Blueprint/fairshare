@@ -90,6 +90,7 @@ public class ExpenseService {
                 null, group.getMember(currentUserId).getUser());
         expense.setConversion(conversion.originalAmount(), conversion.originalCurrency(),
                 conversion.exchangeRate(), conversion.amount());
+        expense.setCategory(request.category()); // #16 AC1
         Expense saved = expenseRepository.save(expense);
 
         applyEqualSplit(payer, conversion.amount(), members, saved); // AC1, AC4
@@ -143,7 +144,8 @@ public class ExpenseService {
                 && expense.getDescription().equals(request.description().trim())
                 && expense.getPaidBy().getId().equals(request.paidByUserId())
                 && expense.getExpenseDate().equals(expenseDate)
-                && existingParticipantIds.equals(participantIds)) {
+                && existingParticipantIds.equals(participantIds)
+                && expense.getCategory() == request.category()) {
             return;
         }
         Conversion conversion = convert(group, request, expenseDate);
@@ -154,6 +156,7 @@ public class ExpenseService {
         expense.setConversion(conversion.originalAmount(), conversion.originalCurrency(),
                 conversion.exchangeRate(), conversion.amount());
         expense.setDescription(request.description().trim());
+        expense.setCategory(request.category());
         expense.setPaidBy(payer.getUser());
         expense.setExpenseDate(expenseDate);
 
@@ -333,6 +336,7 @@ public class ExpenseService {
                 expense.getRecurringExpense() != null ? expense.getRecurringExpense().getId() : null,
                 expense.getOriginalAmount(),
                 expense.getOriginalCurrency(),
-                expense.getExchangeRate(), expense.getCreatedBy().getId());
+                expense.getExchangeRate(), expense.getCreatedBy().getId(),
+                expense.getCategory());
     }
 }

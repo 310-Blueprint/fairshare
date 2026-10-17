@@ -1,10 +1,11 @@
-import { AmountField, CurrencyField, DescriptionField, PayerSelect, ParticipantsChecklist, FieldError } from './ExpenseFormFields';
+import { AmountField, CategoryField, CurrencyField, DescriptionField, PayerSelect, ParticipantsChecklist, FieldError } from './ExpenseFormFields';
 
 function ExpenseForm({
     amount,
     currency,
     currencies,
     description,
+    category,
     paidByUserId,
     expenseDate,
     participantUserIds,
@@ -14,6 +15,7 @@ function ExpenseForm({
     onAmountChange,
     onCurrencyChange,
     onDescriptionChange,
+    onCategoryChange,
     onPaidByUserIdChange,
     onExpenseDateChange,
     onParticipantUserIdsChange,
@@ -28,13 +30,16 @@ function ExpenseForm({
                 <CurrencyField value={currency} currencies={currencies} onChange={onCurrencyChange} error={errors.currency} />
             </div>
 
-            <div className="form-row form-row-wide-start">
+            {/* #16: category shares the description row so the form stays the same height */}
+            <div className="form-row form-row-3">
                 <DescriptionField
                     value={description}
                     onChange={onDescriptionChange}
                     error={errors.description}
                     placeholder="What was it for?"
                 />
+
+                <CategoryField value={category} onChange={onCategoryChange} error={errors.category} />
 
                 <div className="form-group">
                     <label htmlFor="expenseDate">Date</label>

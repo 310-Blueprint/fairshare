@@ -17,6 +17,7 @@ function EditExpense() {
     const [currency, setCurrency] = useState('');
     const [currencies, setCurrencies] = useState([]);
     const [description, setDescription] = useState('');
+    const [category, setCategory] = useState('');   // #16 AC1: '' when the expense has none
     const [paidByUserId, setPaidByUserId] = useState('');
     const [expenseDate, setExpenseDate] = useState('');
     // Form controls use strings for values, but the API expects numbers when we submit the final payload.
@@ -53,6 +54,7 @@ function EditExpense() {
                 setAmount(String(expense.originalAmount ?? expense.amount));
                 setCurrency(expense.originalCurrency ?? '');
                 setDescription(expenseResult.expense.description);
+                setCategory(expense.category ?? '');
                 setPaidByUserId(String(expenseResult.expense.paidByUserId));
                 setExpenseDate(expenseResult.expense.expenseDate);
                 setParticipantUserIds(expenseResult.expense.participantUserIds.map(String));
@@ -84,6 +86,7 @@ function EditExpense() {
                 amount,
                 currency,
                 description,
+                category: category || null,
                 paidByUserId: Number(paidByUserId),
                 expenseDate,
                 participantUserIds: participantUserIds.map(Number)
@@ -121,6 +124,7 @@ function EditExpense() {
                     currency={currency}
                     currencies={currencies}
                     description={description}
+                    category={category}
                     paidByUserId={paidByUserId}
                     expenseDate={expenseDate}
                     participantUserIds={participantUserIds}
@@ -130,6 +134,7 @@ function EditExpense() {
                     onAmountChange={setAmount}
                     onCurrencyChange={setCurrency}
                     onDescriptionChange={setDescription}
+                    onCategoryChange={setCategory}
                     onPaidByUserIdChange={setPaidByUserId}
                     onExpenseDateChange={setExpenseDate}
                     onParticipantUserIdsChange={setParticipantUserIds}

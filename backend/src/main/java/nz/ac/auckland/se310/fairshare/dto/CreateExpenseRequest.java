@@ -8,6 +8,7 @@ import jakarta.validation.constraints.PastOrPresent;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 import jakarta.validation.constraints.NotEmpty;
+import nz.ac.auckland.se310.fairshare.model.ExpenseCategory;
 import java.util.List;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -36,10 +37,18 @@ public record CreateExpenseRequest(
 
         // #14 AC1: ISO 4217 code the amount was entered in. Left out, it defaults to the group's
         // base currency. Checked against the supported list by CurrencyService (AC3).
-        String currency) {
+        String currency,
+
+        // #16 AC1: optional; left out, the expense is uncategorised.
+        ExpenseCategory category) {
 
     public CreateExpenseRequest(BigDecimal amount, String description, Long paidByUserId,
                                 List<Long> participantUserIds, LocalDate expenseDate) {
         this(amount, description, paidByUserId, participantUserIds, expenseDate, null);
+    }
+
+    public CreateExpenseRequest(BigDecimal amount, String description, Long paidByUserId,
+                                List<Long> participantUserIds, LocalDate expenseDate, String currency) {
+        this(amount, description, paidByUserId, participantUserIds, expenseDate, currency, null);
     }
 }

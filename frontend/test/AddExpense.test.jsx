@@ -64,11 +64,25 @@ it('AC1: saves the expense and returns to the group', async () => {
         amount: '42.5',
         currency: 'NZD',
         description: 'Groceries',
+        category: null,
         paidByUserId: 2,
         expenseDate: today(),
         participantUserIds: [1, 2],
     });
     expect(await screen.findByText('Flat 3')).toBeInTheDocument();
+});
+
+it('#16 AC1: saves the chosen category with the expense', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.type(await screen.findByLabelText('Amount'), '12');
+    await user.type(screen.getByLabelText('Description'), 'Bus');
+    await user.selectOptions(screen.getByLabelText('Category'), 'Transport');
+    await user.click(screen.getByRole('checkbox', { name: 'alice' }));
+    await user.click(screen.getByRole('button', { name: 'Save expense' }));
+
+    expect(createExpense).toHaveBeenCalledWith('1', expect.objectContaining({ category: 'TRANSPORT' }));
 });
 
 it('AC2: shows an inline error on each missing field', async () => {

@@ -22,6 +22,12 @@ public class ExchangeRateUnavailableException extends RuntimeException {
                 + " is unavailable right now, so this balance cannot be shown. Try again later.", cause);
     }
 
+    /** #16: the spending overview is only read, so nothing is lost when it cannot be converted. */
+    public static ExchangeRateUnavailableException forSpending(String from, String to, Throwable cause) {
+        return new ExchangeRateUnavailableException("The exchange rate from " + from + " to " + to
+                + " is unavailable right now, so your spending cannot be shown. Try again later.", cause);
+    }
+
     public ExchangeRateUnavailableException(String from, String to) {
         this(from, to, null);
     }
