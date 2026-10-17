@@ -1,26 +1,101 @@
+/* #83: design tokens for the redesign. Every screen takes its colours, type and spacing from here. */
+:root {
+    --bg: #151a18;
+    --surface: #fcfbf8;
+    --surface-muted: #f1efe9;
+    --surface-raised: #fff;
+    --border: #e3e0d8;
+    --accent: #66cda4;
+    --accent-hover: #55bf95;
+    --accent-strong: #2ed3a2;
+    --text: #1b1f1e;
+    --text-muted: #5f6662;
+    --text-on-dark: #f5f3ee;
+    --text-on-dark-muted: #a9b0ac;
+    --danger: #c62828;
+    --danger-surface: #fdecea;
+    --danger-surface-hover: #f9d6d2;
+    --success: #1f7a55;
+    --success-surface: #e3f6ee;
+
+    --font-display: 'Momo Trust Display', 'Momo Trust Sans', system-ui, sans-serif;
+    --font-body: 'Momo Trust Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+    --radius-card: 24px;
+    --radius-input: 12px;
+    --radius-pill: 999px;
+    --shadow-card: 0 12px 32px rgba(0, 0, 0, 0.25);
+
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 24px;
+    --space-6: 32px;
+    --space-7: 48px;
+
+    --card-width: 480px;
+
+    /* #83: the page fits the window, so cards never make it scroll. */
+    --header-height: 80px;
+    --page-padding: var(--space-5);
+}
+
 * {
     box-sizing: border-box;
 }
 
 body {
     margin: 0;
-    font-family: Arial, sans-serif;
-    background-color: #f4f4f4;
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1.5;
+    color: var(--text-on-dark);
+    background-color: var(--bg);
+    -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3 {
+    font-family: var(--font-display);
+    font-weight: 400;
+    line-height: 1.2;
+}
+
+h1 {
+    font-size: 2rem;
+}
+
+h2 {
+    font-size: 1.375rem;
 }
 
 .page {
-    min-height: 100vh;
+    min-height: calc(100dvh - var(--header-height));
     display: flex;
+    flex-direction: column;
     justify-content: center;
     align-items: center;
+    gap: var(--space-5);
+    padding: var(--page-padding) var(--space-6);
 }
 
+/* Cards shrink with the viewport rather than overflowing it, and are never taller than the
+   window: a long list scrolls inside the card (see .scroll-list) while the rest stays in view. */
 .card {
-    width: 400px;
-    padding: 40px;
-    background-color: white;
-    border-radius: 10px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: var(--card-width);
+    max-height: calc(100dvh - var(--header-height) - 2 * var(--page-padding));
+    overflow-y: auto;
+    padding: var(--space-6);
+    color: var(--text);
+    background-color: var(--surface);
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-card);
+    overflow-wrap: anywhere;
 }
 
 .card h1 {
@@ -28,58 +103,554 @@ body {
     text-align: center;
 }
 
+/* A form straight after a card's title, with no subtitle between, still needs room. */
+.card h1 + form {
+    margin-top: var(--space-5);
+}
+
 .subtitle {
     text-align: center;
-    color: #666;
-    margin-bottom: 30px;
+    color: var(--text-muted);
+    margin: var(--space-2) 0 var(--space-5);
 }
+
+/* ---- Hero: the large logo and title on the dark page above a card, as in the home mockup ---- */
+
+.page.hero {
+    justify-content: flex-start;
+    gap: var(--space-4);
+    padding-top: var(--space-6);
+}
+
+/* The PNG's dark tile matches the page background, so only the mark shows. */
+.hero-logo {
+    display: block;
+    width: 190px;
+    height: auto;
+    margin-bottom: calc(-1 * var(--space-6));
+}
+
+.hero-title {
+    margin: 0;
+    font-size: clamp(2.5rem, 3.6vw, 3rem);
+    text-align: center;
+    color: var(--text-on-dark);
+}
+
+.accent-text {
+    color: var(--accent);
+}
+
+.hero-tagline {
+    max-width: 320px;
+    margin: 0 auto var(--space-5);
+    font-size: 1.375rem;
+    line-height: 1.4;
+    text-align: center;
+}
+
+/* A taller card below the hero, e.g. the login form, gets a smaller logo so it all fits. */
+.page.hero-compact {
+    gap: var(--space-3);
+    padding-top: 0;
+}
+
+.hero-compact .hero-logo {
+    width: 140px;
+    margin-bottom: calc(-1 * var(--space-5));
+}
+
+.hero-compact .hero-title {
+    font-size: 2.5rem;
+}
+
+/* Lists whose length depends on the data scroll inside their card rather than growing it. */
+.group-list,
+.member-list,
+.expense-list,
+.balance-list,
+.settlement-list,
+.debt-list,
+.detailed-balance-list {
+    flex: 0 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+}
+
+/* A one-field form with its button alongside, e.g. adding a member. */
+.inline-form {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+    gap: var(--space-3);
+}
+
+.inline-form .form-group {
+    margin-bottom: 0;
+}
+
+form.inline-form button[type="submit"] {
+    width: auto;
+    margin-top: 0;
+}
+
+/* A form or short list that needs more room than a login card, e.g. adding an expense. */
+.card-form {
+    max-width: 600px;
+}
+
+/* A form with three fields to a row, e.g. a recurring expense's schedule. */
+.card-form-wide {
+    max-width: 680px;
+}
+
+/* Wider card for screens with lists or tables, e.g. a group or its members. */
+.card-wide {
+    max-width: 760px;
+}
+
+/* A card's title with its main action alongside, e.g. "Your Groups" and "Create group". */
+.card-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
+    margin-bottom: var(--space-6);
+}
+
+.card .card-header h1 {
+    text-align: left;
+}
+
+.header-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+}
+
+/* A white panel inside a card, holding one section of a busy screen. */
+.panel {
+    padding: var(--space-5);
+    background-color: var(--surface-raised);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-input);
+}
+
+.panel h2 {
+    margin: 0 0 var(--space-4);
+}
+
+/* A section's title with its action alongside, e.g. "Expenses" and "Add an expense". */
+.section-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    margin-bottom: var(--space-4);
+}
+
+.section-header h2 {
+    margin: 0;
+}
+
+/* ---- Lists of expenses and balances, shared by the group and balance screens ---- */
+
+.expense-list,
+.balance-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.expense-list li {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 2px var(--space-4);
+    padding: var(--space-2) 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.expense-list li:last-child {
+    border-bottom: none;
+}
+
+.expense-description {
+    grid-column: 1;
+    font-weight: 500;
+}
+
+.expense-meta {
+    grid-column: 1;
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+.expense-amount {
+    grid-row: 1 / span 2;
+    grid-column: 2;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.balance {
+    color: var(--text);
+}
+
+.balance-list li {
+    padding: var(--space-2) 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.balance-list li:last-child {
+    border-bottom: none;
+}
+
+/* A balance's direction: owed to the member, owed by them, or settled. */
+.balance-Positive {
+    color: var(--success);
+    font-size: 1.25rem;
+    font-weight: 500;
+}
+
+.balance-Negative {
+    color: var(--danger);
+    font-size: 1.25rem;
+    font-weight: 500;
+}
+
+.balance-Neutral {
+    color: var(--text-muted);
+}
+
+/* ---- Links ---- */
+
+a {
+    color: var(--accent);
+}
+
+.card a {
+    color: var(--success);
+    font-weight: 500;
+    text-underline-offset: 3px;
+}
+
+/* ---- Forms (AC4) ---- */
 
 .form-group {
     display: flex;
     flex-direction: column;
-    margin-bottom: 20px;
+    margin-bottom: var(--space-4);
 }
 
 .form-group label {
     margin-bottom: 6px;
-    font-weight: bold;
+    font-weight: 500;
 }
 
-.form-group input,
-.form-group select {
-    padding: 10px;
-    font-size: 16px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    background-color: white;
+input:not([type="checkbox"]):not([type="radio"]),
+select,
+textarea {
+    width: 100%;
+    padding: 10px var(--space-4);
+    font: inherit;
+    color: var(--text);
+    background-color: var(--surface-raised);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-input);
+    transition: border-color 0.15s, box-shadow 0.15s;
 }
 
-.form-group input:focus,
-.form-group select:focus {
+input:not([type="checkbox"]):not([type="radio"]):focus,
+select:focus,
+textarea:focus {
     outline: none;
-    border-color: #555;
+    border-color: var(--accent-strong);
+    box-shadow: 0 0 0 3px rgba(102, 205, 164, 0.35);
+}
+
+/* Two related fields side by side, e.g. amount and currency. */
+.form-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0 var(--space-4);
+}
+
+/* Amount needs less room than a currency name such as "NZD — New Zealand Dollar". */
+.form-row-amount {
+    grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+}
+
+/* Three short fields in a row, e.g. frequency, start date and end date. */
+.form-row-3 {
+    grid-template-columns: minmax(0, 1.3fr) repeat(2, minmax(0, 1fr));
+}
+
+/* A wide field followed by a short one, e.g. description and date. */
+.form-row-wide-start {
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+}
+
+/* Participants are toggle chips: each checkbox sits in a pill that turns green when picked. */
+.select-participants {
+    margin-bottom: var(--space-4);
+}
+
+.select-participants > p {
+    margin: 0 0 6px;
+    font-weight: 500;
+}
+
+.select-participants ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.select-participants label {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-4);
+    background-color: var(--surface-raised);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-pill);
+    cursor: pointer;
+    transition: border-color 0.15s, background-color 0.15s;
+}
+
+.select-participants label:has(input:checked) {
+    background-color: var(--success-surface);
+    border-color: var(--accent);
+}
+
+/* Replaces the browser's own select arrow so selects line up with text inputs. */
+select {
+    appearance: none;
+    padding-right: var(--space-7);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%235f6662' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right var(--space-4) center;
+    cursor: pointer;
+}
+
+input[type="checkbox"],
+input[type="radio"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--success);
 }
 
 .error {
-    margin-top: 5px;
+    margin-top: var(--space-1);
     font-size: 14px;
-    color: #d32f2f;
+    color: var(--danger);
+}
+
+/* A confirmation that something worked, e.g. a saved profile. */
+.success {
+    margin: var(--space-3) 0;
+    padding: var(--space-3) var(--space-4);
+    color: var(--success);
+    background-color: var(--success-surface);
+    border-radius: var(--radius-input);
+    text-align: center;
+}
+
+/* Secondary text under a card's main content, e.g. "Need an account?" or a back link. */
+.card-footer {
+    margin: var(--space-4) 0 0;
+    text-align: center;
+    color: var(--text-muted);
+}
+
+/* Stacked full-width actions at the end of a form. */
+/* Side-by-side actions at the end of a form, e.g. Save Changes and Log Out. */
+.form-actions {
+    display: flex;
+    gap: var(--space-3);
+    margin-top: var(--space-2);
+}
+
+.form-actions button,
+form .form-actions button[type="submit"] {
+    flex: 1;
+    width: auto;
+    margin-top: 0;
 }
 
 .empty {
-    color: #666;
+    color: var(--text-muted);
     text-align: center;
-    margin: 20px 0;
+    margin: var(--space-5) 0;
 }
 
-button {
-    width: 100%;
-    padding: 12px;
-    margin-top: 10px;
-    font-size: 16px;
-    border: none;
-    border-radius: 5px;
+/* ---- Buttons (AC4) ----
+   Every button, and any link styled as one with .button, is a green pill by default.
+   .button-secondary and .button-danger are the only variants; .button-small is for rows. */
+
+button,
+.button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    min-height: 48px;
+    padding: var(--space-3) var(--space-6);
+    font: inherit;
+    font-weight: 500;
+    line-height: 1.2;
+    color: var(--text);
+    background-color: var(--accent);
+    border: 1px solid transparent;
+    border-radius: var(--radius-pill);
+    text-decoration: none;
     cursor: pointer;
+    transition: background-color 0.15s, border-color 0.15s;
+}
+
+.card .button {
+    color: var(--text);
+}
+
+button:hover,
+.button:hover {
+    background-color: var(--accent-hover);
+}
+
+button:focus-visible,
+.button:focus-visible,
+a:focus-visible {
+    outline: 3px solid var(--accent-strong);
+    outline-offset: 2px;
+}
+
+button:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.button-secondary,
+.card .button-secondary {
+    color: var(--text);
+    background-color: transparent;
+    border-color: var(--text);
+}
+
+.button-secondary:hover {
+    background-color: var(--surface-muted);
+}
+
+.button-danger {
+    color: var(--danger);
+    background-color: var(--danger-surface);
+}
+
+.button-danger:hover {
+    background-color: var(--danger-surface-hover);
+}
+
+.button-small {
+    flex-shrink: 0;
+    white-space: nowrap;
+    min-height: 36px;
+    padding: var(--space-1) var(--space-4);
+    font-size: 14px;
+}
+
+/* A form's submit button spans the form, as before the redesign. */
+form button[type="submit"] {
+    width: 100%;
+    margin-top: var(--space-2);
+}
+
+/* ---- Badges ---- */
+
+.badge {
+    display: inline-block;
+    width: fit-content;
+    padding: 2px var(--space-2);
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--success);
+    background-color: var(--success-surface);
+    border-radius: var(--radius-pill);
+}
+
+/* ---- Confirmation dialog, shared by every "are you sure" prompt ---- */
+
+.confirmation-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-4);
+    background: rgba(0, 0, 0, 0.6);
+}
+
+/* The dialogs are native <dialog> elements, so the browser's own position, margin and border are reset. */
+.confirmation-dialog {
+    position: static;
+    width: min(420px, 100%);
+    margin: 0;
+    border: 0;
+    padding: var(--space-6);
+    color: var(--text);
+    background: var(--surface);
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-card);
+}
+
+.confirmation-dialog h2 {
+    margin-top: 0;
+}
+
+.confirmation-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--space-3);
+    margin-top: var(--space-5);
+}
+
+/* ---- Header ---- */
+
+.header {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background-color: var(--bg);
+}
+
+.header-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: var(--header-height);
+    padding: var(--space-2) 18px;
+}
+
+.profile-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    color: var(--accent);
+    background-color: var(--surface);
+    border: 2px solid var(--accent);
+    border-radius: 50%;
+    transition: transform 0.15s;
+}
+
+.profile-button:hover {
+    transform: scale(1.05);
 }
 
 .logo {
@@ -87,35 +658,10 @@ button {
     align-items: center;
 }
 
+/* The logo PNG has a dark tile matching --bg, and padding around the mark, hence the negative margin. */
 .logo-image {
     display: block;
-    height: 48px;
+    height: 72px;
     width: auto;
-}
-
-.header {
-    position: sticky;
-    top: 0;
-    z-index: 10;
-    background: #fff;
-    border-bottom: 1px solid #e5e5e5;
-}
-
-.header-inner {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 12px 24px;
-}
-
-.main-nav {
-    display: flex;
-    gap: 16px;
-    align-items: center;
-}
-
-.main-nav a {
-    text-decoration: none;
-    color: #333;
-    font-weight: 600;
+    margin: -8px 0;
 }

@@ -50,7 +50,7 @@ function AddIndividualDebt() {
 
     return (
         <div className="page">
-            <div className="card">
+            <div className="card card-form">
                 <h1>Record a debt</h1>
                 <p className="subtitle">They owe you - the selected user becomes the debtor</p>
 
@@ -64,24 +64,28 @@ function AddIndividualDebt() {
                         placeholder="name@example.com"
                     />
 
-                    <AmountField value={amount} onChange={setAmount} error={errors.amount} />
+                    <div className="form-row form-row-amount">
+                        <AmountField value={amount} onChange={setAmount} error={errors.amount} />
 
-                    <CurrencyField
-                        value={currency}
-                        currencies={currencies}
-                        onChange={setCurrency}
-                        error={errors.currency || currenciesError}
-                        emptyLabel="My home currency"
-                    />
+                        <CurrencyField
+                            value={currency}
+                            currencies={currencies}
+                            onChange={setCurrency}
+                            error={errors.currency || currenciesError}
+                            emptyLabel="My home currency"
+                        />
+                    </div>
 
-                    <DescriptionField
-                        value={description}
-                        onChange={setDescription}
-                        error={errors.description}
-                        placeholder="What was it for?"
-                    />
+                    <div className="form-row form-row-wide-start">
+                        <DescriptionField
+                            value={description}
+                            onChange={setDescription}
+                            error={errors.description}
+                            placeholder="What was it for?"
+                        />
 
-                    <DateField value={date} onChange={setDate} error={errors.date} max={today()} />
+                        <DateField value={date} onChange={setDate} error={errors.date} max={today()} />
+                    </div>
 
                     <FieldError message={errors.form} />
 
@@ -90,7 +94,9 @@ function AddIndividualDebt() {
                     </button>
                 </form>
 
-                <Link to="/debts">Back to individual debts</Link>
+                <p className="card-footer">
+                    <Link to="/debts">Back to individual debts</Link>
+                </p>
             </div>
         </div>
     );

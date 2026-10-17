@@ -209,15 +209,26 @@ function GroupPage() {
 
     return (
         <div className="page">
-            <div className="card group-card">
-                <h1>{group.name}</h1>
-                {group.description && <p className="subtitle">{group.description}</p>}
+            <div className="card card-wide group-card">
+                <div className="card-header">
+                    <div>
+                        <h1>{group.name}</h1>
+                        {group.description && <p className="group-description">{group.description}</p>}
+                    </div>
+                    <div className="group-actions">
+                        <Link to="/groups">Back to your groups</Link>
+                        <Link className="button button-secondary" to={`/groups/${id}/members`}>Manage members</Link>
+                    </div>
+                </div>
 
-                <Link to={`/groups/${id}/members`}>Manage members</Link>
-
-                <section>
-                    <h2>Expenses</h2>
-                    <Link className="action" to={`/groups/${id}/expenses/new`}>Add an expense</Link>
+                {/* #83: sections sit in two columns on desktop widths */}
+                <div className="group-sections">
+                <div className="group-column">
+                <section className="panel group-expenses">
+                    <div className="section-header">
+                        <h2>Expenses</h2>
+                        <Link className="button button-small" to={`/groups/${id}/expenses/new`}>Add an expense</Link>
+                    </div>
 
                     {deleteError && <p className="error" role="alert">{deleteError}</p>}
 
@@ -257,26 +268,30 @@ function GroupPage() {
                     )}
                 </section>
 
-                <ExpenseActivity groupId={group.id} refreshVersion={expenseVersion} />
-
-                <section>
-                    <h2>Recurring expenses</h2>
-                    <Link className="action" to={`/groups/${id}/recurring-expenses/new`}>Add recurring expense</Link>
+                <section className="panel group-recurring">
+                    <div className="section-header">
+                        <h2>Recurring expenses</h2>
+                        <Link className="button button-small" to={`/groups/${id}/recurring-expenses/new`}>Add recurring expense</Link>
+                    </div>
 
                     <RecurringExpenseList recurringExpenses={recurringExpenses}
                                           error={recurringExpensesError}
                                           currency={group.baseCurrency}/>
                 </section>
 
-                <section>
+                {/* #11: expense activity is a panel of its own below the recurring expenses */}
+                <div className="panel group-activity">
+                    <ExpenseActivity groupId={group.id} refreshVersion={expenseVersion} />
+                </div>
+                </div>
+
+                <div className="group-column">
+                <section className="panel group-balances">
                     <h2>Balances</h2>
                     {/* AC1: each member's balance reflects the expenses recorded so far */}
                     {settled ? (
                         <p className="balance">
                             Everyone is settled up. Balance: {money(group.baseCurrency, 0)}
-                            <br/>
-
-
                         </p>
                     ) : (
                         <ul className="balance-list">
@@ -285,31 +300,33 @@ function GroupPage() {
                                     {balanceLine(member, group.baseCurrency)}
                                 </li>
                             ))}
-
                         </ul>
                     )}
-                    <Link to={`/groups/${id}/balance`}>View Detailed</Link>
+                    <Link className="section-link" to={`/groups/${id}/balance`}>View Detailed</Link>
                 </section>
 
-                <section>
+                <section className="panel group-settlement">
                     <h2>Settlement plan</h2>
                     <SettlementView groupId={group.id} baseCurrency={group.baseCurrency} refreshVersion={expenseVersion}/>
                 </section>
 
-                <section>
-                    <h2>Export</h2>
-                    <div className="export-actions">
-                        <button type="button" onClick={() => handleExport('csv')} disabled={exporting !== null}>
-                            {exporting === 'csv' ? 'Exporting…' : 'Export CSV'}
-                        </button>
-                        <button type="button" onClick={() => handleExport('pdf')} disabled={exporting !== null}>
-                            {exporting === 'pdf' ? 'Exporting…' : 'Export PDF'}
-                        </button>
+                {/* #12: export sits with the other group-wide actions in the right-hand column */}
+                <section className="panel group-export">
+                    <div className="section-header">
+                        <h2>Export</h2>
+                        <div className="export-actions">
+                            <button type="button" className="button-small" onClick={() => handleExport('csv')} disabled={exporting !== null}>
+                                {exporting === 'csv' ? 'Exporting…' : 'Export CSV'}
+                            </button>
+                            <button type="button" className="button-small" onClick={() => handleExport('pdf')} disabled={exporting !== null}>
+                                {exporting === 'pdf' ? 'Exporting…' : 'Export PDF'}
+                            </button>
+                        </div>
                     </div>
                     {exportError && <span className="error">{exportError}</span>}
                 </section>
-
-                <Link to="/groups">Back to your groups</Link>
+                </div>
+                </div>
             </div>
         </div>
     );

@@ -5,7 +5,6 @@ import RecurringExpenseForm from '../components/RecurringExpenseForm';
 import { today } from '../utils/dates';
 import { validateSharedExpenseFields } from '../utils/expenseValidation';
 import { useGroupMembersForm } from '../utils/useGroupMembersForm';
-import './AddExpense.css';
 
 // Generation splits into whole cents, so a fractional cent (e.g. 10.005) can't be split exactly.
 function hasMoreThanTwoDecimalPlaces(amount) {
@@ -89,7 +88,7 @@ function AddRecurringExpense() {
 
     return (
         <div className="page">
-            <div className="card">
+            <div className="card card-form card-form-wide">
                 <h1>Add a recurring expense</h1>
                 <p className="subtitle">Automatically split on a schedule</p>
 
@@ -114,7 +113,9 @@ function AddRecurringExpense() {
                     onSubmit={handleSubmit}
                 />
 
-                <Link to={`/groups/${id}`}>Back to the group</Link>
+                <p className="card-footer">
+                    <Link to={`/groups/${id}`}>Back to the group</Link>
+                </p>
             </div>
         </div>
     );

@@ -120,10 +120,12 @@ function AddExpense() {
 
     return (
         <div className="page">
-            <div className="card expense-card">
+            <div className="card expense-with-scanner">
                 <h1>Add an expense</h1>
                 <p className="subtitle">Split equally among selected members</p>
 
+                {/* #83: the receipt scanner sits beside the form so the card fits a laptop screen */}
+                <div className="expense-with-scanner-layout">
                 <ReceiptScanner groupId={id} onApply={applyReceipt} />
 
                 <ExpenseForm
@@ -148,8 +150,11 @@ function AddExpense() {
                     onSubmit={handleSubmit}
                     maxExpenseDate={today()}
                 />
+                </div>
 
-                <Link to={`/groups/${id}`}>Back to the group</Link>
+                <p className="card-footer">
+                    <Link to={`/groups/${id}`}>Back to the group</Link>
+                </p>
             </div>
         </div>
     );

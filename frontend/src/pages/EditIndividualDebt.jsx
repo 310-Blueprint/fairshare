@@ -96,7 +96,9 @@ function EditIndividualDebt() {
             <div className="page">
                 <div className="card">
                     <p className="error">{errors.form}</p>
-                    <Link to={`/debts/${otherUserId}`}>Back to balance</Link>
+                    <p className="card-footer">
+                        <Link to={`/debts/${otherUserId}`}>Back to balance</Link>
+                    </p>
                 </div>
             </div>
         );
@@ -104,7 +106,7 @@ function EditIndividualDebt() {
 
     return (
         <div className="page">
-            <div className="card">
+            <div className="card card-form">
                 <h1>Edit entry</h1>
 
                 <form onSubmit={handleSubmit} noValidate>
@@ -117,18 +119,22 @@ function EditIndividualDebt() {
                         placeholder="name@example.com"
                     />
 
-                    <AmountField value={amount} onChange={setAmount} error={errors.amount} />
+                    <div className="form-row form-row-amount">
+                        <AmountField value={amount} onChange={setAmount} error={errors.amount} />
 
-                    <CurrencyField
-                        value={currency}
-                        currencies={currencies}
-                        onChange={setCurrency}
-                        error={errors.currency || currenciesError}
-                    />
+                        <CurrencyField
+                            value={currency}
+                            currencies={currencies}
+                            onChange={setCurrency}
+                            error={errors.currency || currenciesError}
+                        />
+                    </div>
 
-                    <DescriptionField value={description} onChange={setDescription} error={errors.description} />
+                    <div className="form-row form-row-wide-start">
+                        <DescriptionField value={description} onChange={setDescription} error={errors.description} />
 
-                    <DateField value={date} onChange={setDate} error={errors.date} max={today()} />
+                        <DateField value={date} onChange={setDate} error={errors.date} max={today()} />
+                    </div>
 
                     <FieldError message={errors.form} />
 
@@ -137,7 +143,9 @@ function EditIndividualDebt() {
                     </button>
                 </form>
 
-                <Link to={`/debts/${otherUserId}`}>Back to balance</Link>
+                <p className="card-footer">
+                    <Link to={`/debts/${otherUserId}`}>Back to balance</Link>
+                </p>
             </div>
         </div>
     );

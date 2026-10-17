@@ -1,19 +1,42 @@
-.form-group select {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 6px;
-    font-size: 14px;
-    background: #fff;
+/* #83: on desktop the receipt scanner is a column beside the expense form, so scanning a
+   receipt never pushes the form below the bottom of the window. */
+.expense-with-scanner {
+    max-width: 960px;
 }
 
-.expense-card {
-    width: min(500px, calc(100vw - 32px));
-    margin: 24px 0;
+.expense-with-scanner-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.75fr);
+    align-items: start;
+    gap: var(--space-6);
 }
 
-@media (max-width: 480px) {
-    .expense-card {
-        padding: 28px 24px;
+.expense-with-scanner-layout .receipt-scanner {
+    margin-bottom: 0;
+}
+
+/* Collapsed, the scanner reads as a drop zone the height of the form's first rows. */
+.expense-with-scanner-layout .receipt-scan-trigger {
+    flex-direction: column;
+    justify-content: center;
+    min-height: 180px;
+    text-align: center;
+}
+
+.expense-with-scanner-layout .receipt-scan-trigger span:last-child {
+    justify-items: center;
+}
+
+/* The side column is narrow, so the scanner's buttons stack. */
+.expense-with-scanner-layout .receipt-upload-actions,
+.expense-with-scanner-layout .receipt-result-actions {
+    flex-direction: column;
+}
+
+/* Below desktop widths the scanner returns above the form. */
+@media (max-width: 899px) {
+    .expense-with-scanner-layout {
+        grid-template-columns: minmax(0, 1fr);
+        gap: var(--space-4);
     }
 }

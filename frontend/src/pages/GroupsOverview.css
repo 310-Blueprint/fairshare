@@ -1,50 +1,39 @@
+/* #83: groups as tiles, filling the wide card on desktop widths. */
 .group-list {
-    list-style: none;
-    margin: 0 0 20px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: var(--space-4);
+    margin: 0;
     padding: 0;
+    list-style: none;
 }
 
-.group-list li {
-    border-bottom: 1px solid #eee;
-}
-
-.group-list a {
+.card .group-tile {
     display: flex;
     flex-direction: column;
-    padding: 12px 0;
+    gap: var(--space-1);
+    height: 100%;
+    padding: var(--space-5);
+    color: var(--text);
     text-decoration: none;
-    color: inherit;
+    background-color: var(--surface-raised);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-input);
+    transition: border-color 0.15s, transform 0.15s;
 }
 
-.group-list a:hover {
-    background-color: #fafafa;
+.card .group-tile:hover {
+    border-color: var(--accent);
+    transform: translateY(-2px);
 }
 
 .group-name {
-    font-weight: bold;
-    font-size: 16px;
+    font-family: var(--font-display);
+    font-size: 1.25rem;
 }
 
 .group-meta {
-    margin-top: 4px;
     font-size: 14px;
-    color: #666;
-}
-
-.create-link {
-    display: block;
-    padding: 12px;
-    text-align: center;
-    background-color: #eee;
-    border-radius: 5px;
-    text-decoration: none;
-    color: inherit;
-}
-
-.success {
-    padding: 10px;
-    color: #1b5e20;
-    background: #e8f5e9;
-    border-radius: 5px;
-    text-align: center;
+    font-weight: 400;
+    color: var(--text-muted);
 }

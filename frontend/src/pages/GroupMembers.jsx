@@ -108,11 +108,11 @@ function GroupMembers() {
 
     return (
         <div className="page">
-            <div className="card members-card">
+            <div className="card card-form">
                 <h1>Manage Members</h1>
                 <p className="subtitle">Add a registered user by email or username</p>
 
-                <form onSubmit={handleAdd}>
+                <form onSubmit={handleAdd} className="inline-form">
                     <div className="form-group">
                         <label htmlFor="member-identifier">Email or username</label>
                         <input
@@ -137,13 +137,13 @@ function GroupMembers() {
                         <li key={member.userId}>
                             <div>
                                 <strong>{member.username}</strong>
-                                {member.currentUser && <span className="you-label">You</span>}
+                                {member.currentUser && <span className="badge">You</span>}
                                 <span>{member.email}</span>
                                 <span>Net balance: {Number(member.netBalance).toFixed(2)}</span>
                             </div>
                             <button
                                 type="button"
-                                className="remove-button"
+                                className="button-danger button-small"
                                 onClick={() => openRemovalConfirmation(member)}
                             >
                                 {member.currentUser ? 'Leave group' : 'Remove'}
@@ -152,7 +152,9 @@ function GroupMembers() {
                     ))}
                 </ul>
 
-                <Link to={`/groups/${id}`}>Back to group</Link>
+                <p className="card-footer">
+                    <Link to={`/groups/${id}`}>Back to group</Link>
+                </p>
             </div>
 
             {memberToRemove && (
@@ -168,7 +170,7 @@ function GroupMembers() {
                         <div className="confirmation-actions">
                             <button
                                 type="button"
-                                className="cancel-button"
+                                className="button-secondary"
                                 disabled={removing}
                                 onClick={() => {
                                     setError(null);
@@ -179,7 +181,7 @@ function GroupMembers() {
                             </button>
                             <button
                                 type="button"
-                                className="confirm-remove-button"
+                                className="button-danger"
                                 disabled={removing}
                                 onClick={() => void handleRemove()}
                             >

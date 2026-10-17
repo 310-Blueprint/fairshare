@@ -61,10 +61,12 @@ function MemberBalance() {
     if (error) {
         return (
             <div className="page">
-                <div className="card balance-card">
+                <div className="card card-form balance-card">
                     <h1>Member balance unavailable</h1>
                     <p className="error">{error}</p>
-                    <Link to={`/groups/${id}/balance`}>Back to balances</Link>
+                    <p className="card-footer">
+                        <Link to={`/groups/${id}/balance`}>Back to balances</Link>
+                    </p>
                 </div>
             </div>
         );
@@ -86,7 +88,7 @@ function MemberBalance() {
     const memberExpenses = expenses.filter((expense) => String(expense.paidByUserId) === String(memberId));
     return (
         <div className="page">
-            <div className="card balance-card">
+            <div className="card card-form balance-card">
                 <h1>{member.username}</h1>
                 <p className="subtitle">Balance in {group.name}</p>
                 <h2>Current Balance</h2>
@@ -112,7 +114,9 @@ function MemberBalance() {
                             ))}
                         </ul>
                     )}
-                <Link to={`/groups/${id}/balance`}>Back to balances</Link>
+                <p className="card-footer">
+                    <Link to={`/groups/${id}/balance`}>Back to balances</Link>
+                </p>
             </div>
         </div>
     );

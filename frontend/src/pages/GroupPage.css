@@ -1,87 +1,181 @@
-.group-card h2 {
-    margin: 30px 0 10px;
-    font-size: 18px;
-    border-bottom: 1px solid #eee;
-    padding-bottom: 6px;
+/* #83: the group screen fills a wider card, with its sections as panels in two columns. */
+/* The group screen holds the most, so it trims the page and card padding to fit the window. */
+.page:has(.group-card) {
+    --page-padding: var(--space-4);
 }
 
-.balance {
-    color: #333;
-    
-}
-.expense-list,
-.balance-list {
-    list-style: none;
-    margin: 0;
-    padding: 0;
+.group-card {
+    max-width: 1100px;
+    padding: var(--space-5) var(--space-6);
 }
 
-.expense-list li {
-    display: grid;
-    grid-template-columns: 1fr auto;
-    gap: 2px 12px;
-    padding: 10px 0;
-    border-bottom: 1px solid #f0f0f0;
+.group-card .card-header {
+    margin-bottom: var(--space-3);
 }
 
-.expense-description {
-    font-weight: 600;
+.group-card .group-sections,
+.group-card .group-column {
+    gap: var(--space-4);
 }
 
-.expense-amount {
-    grid-row: 1 / span 2;
-    grid-column: 2;
-    align-self: center;
+.group-card h1 {
+    font-size: 1.75rem;
 }
 
-.expense-meta {
-    font-size: 13px;
-    color: #666;
-}
-
-.balance-list li {
-    padding: 6px 0;
-}
-
-.action {
-    display: inline-block;
-    margin-bottom: 10px;
-}
-
-.export-actions {
+.group-actions {
     display: flex;
-    gap: 8px;
-    margin-bottom: 10px;
+    align-items: center;
+    gap: var(--space-4);
+}
+
+
+.group-card .panel {
+    padding: var(--space-3) var(--space-5);
+}
+
+.group-card .section-header {
+    margin-bottom: var(--space-2);
+}
+
+.group-card .panel h2 {
+    font-size: 1.25rem;
+}
+
+.group-description {
+    margin: var(--space-1) 0 0;
+    color: var(--text-muted);
+}
+
+.group-sections {
+    display: grid;
+    flex: 1 1 auto;
+    min-height: 0;
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+    grid-template-rows: minmax(0, 1fr);
+    gap: var(--space-5);
+}
+
+/* Each column stacks its own panels, so a tall panel never leaves a gap in the other column.
+   Panels shrink to share the window's height; a long list then scrolls inside its panel. */
+.group-column {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    gap: var(--space-5);
+}
+
+.group-column .panel {
+    display: flex;
+    flex-direction: column;
+    flex: 0 1 auto;
+    min-height: 0;
+}
+
+.group-column .section-header,
+.group-column .panel h2 {
+    flex-shrink: 0;
+}
+
+/* The settlement plan's list sits inside SettlementView, and the activity list inside
+   ExpenseActivity, so these panels scroll themselves. */
+.group-settlement,
+.group-activity {
+    overflow-y: auto;
+}
+
+/* On smaller laptops the right column needs more room for the settlement and export rows. */
+@media (max-width: 1199px) {
+    .group-sections {
+        grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+    }
+
+    .group-card .panel {
+        padding: var(--space-3) var(--space-4);
+    }
+}
+
+/* Below desktop widths the panels stack in reading order and the card scrolls as a whole. */
+@media (max-width: 899px) {
+    .group-sections {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-rows: none;
+    }
+}
+
+/* #11: Edit and Delete sit after the amount, only on expenses the current user created. */
+.expense-list li:has(.expense-actions) {
+    grid-template-columns: minmax(0, 1fr) auto auto;
 }
 
 .expense-actions {
     display: flex;
-    gap: 12px;
-    align-items: baseline;
-    grid-column: 1;
-    margin-bottom: 10px;
+    grid-row: 1 / span 2;
+    grid-column: 3;
+    align-items: center;
+    gap: var(--space-3);
+    font-size: 14px;
 }
 
 .expense-actions .action {
     margin: 0;
 }
 
-.expense-delete-link {
+/* A button that reads as a link, matching the Edit link beside it. */
+.card .expense-delete-link {
     width: auto;
     padding: 0;
     margin: 0;
     border: 0;
     border-radius: 0;
     background: none;
-    color: #0000ee;
+    color: var(--success);
     font: inherit;
+    font-weight: 500;
     text-decoration: underline;
+    text-underline-offset: 3px;
     cursor: pointer;
 }
 
-.expense-delete-link:disabled {
-    color: #666;
+.card .expense-delete-link:disabled {
+    color: var(--text-muted);
     cursor: default;
+}
+
+.section-link {
+    display: inline-block;
+    margin-top: var(--space-3);
+    font-size: 14px;
+}
+
+.settlement-list {
+    margin: var(--space-3) 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+.settlement-list li {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    padding: var(--space-2) 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.settlement-list li:last-child {
+    border-bottom: none;
+}
+
+.export-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+}
+
+/* Export is just a title and two buttons, so it needs no space below its header. */
+.group-export .section-header {
+    margin-bottom: 0;
 }
 
 .expense-activity-list {
@@ -92,7 +186,7 @@
 
 .expense-activity-list li {
     padding: 10px 0;
-    border-bottom: 1px solid #f0f0f0;
+    border-bottom: 1px solid var(--border);
     overflow-wrap: anywhere;
 }
 
@@ -100,5 +194,5 @@
     display: block;
     margin-top: 4px;
     font-size: 13px;
-    color: #666;
+    color: var(--text-muted);
 }

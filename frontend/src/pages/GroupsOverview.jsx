@@ -29,8 +29,17 @@ function GroupsOverview() {
 
     return (
         <div className="page">
-            <div className="card">
-                <h1>Your Groups</h1>
+            <div className="card card-wide">
+                {/* #83: title and main action share a row on desktop widths */}
+                <div className="card-header">
+                    <h1>Your Groups</h1>
+                    {/* #83: with no home page, individual debts and spending are reached from here */}
+                    <div className="header-actions">
+                        <Link to="/debts" className="button button-secondary">Individual Debts</Link>
+                        <Link to="/spending" className="button button-secondary">My Spending</Link>
+                        <Link to="/groups/new" className="button">Create group</Link>
+                    </div>
+                </div>
 
                 {location.state?.notice && (
                     <output className="success">{location.state.notice}</output>
@@ -45,19 +54,17 @@ function GroupsOverview() {
                 <ul className="group-list">
                     {groups.map((group) => (
                         <li key={group.id}>
-                            <Link to={`/groups/${group.id}`}>
+                            <Link to={`/groups/${group.id}`} className="group-tile">
                                 <span className="group-name">{group.name}</span>
                                 <span className="group-meta">
-                  {group.memberCount} {group.memberCount === 1 ? 'member' : 'members'}
+                                    {group.memberCount} {group.memberCount === 1 ? 'member' : 'members'}
                                     {' · created '}
                                     {new Date(group.createdAt).toLocaleDateString()}
-                </span>
+                                </span>
                             </Link>
                         </li>
                     ))}
                 </ul>
-
-                <Link to="/groups/new" className="create-link">Create group</Link>
             </div>
         </div>
     );

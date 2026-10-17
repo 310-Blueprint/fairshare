@@ -4,7 +4,6 @@ import { getGroupMembers } from '../api/groups';
 import { getExpense, updateExpense } from '../api/expenses';
 import { getCurrencies } from '../api/currencies';
 import ExpenseForm from '../components/ExpenseForm';
-import './ManageExpense.css';
 
 function EditExpense() {
     const { id, expenseId } = useParams();
@@ -117,7 +116,7 @@ function EditExpense() {
 
     return (
         <div className="page">
-            <div className="card">
+            <div className="card card-form">
                 <h2>Edit Expense</h2>
                 <p className="subtitle">Edit the details of this expense</p>
                 <ExpenseForm
@@ -142,7 +141,9 @@ function EditExpense() {
                     onSubmit={handleSubmit}
                 />
 
-                <Link to={`/groups/${id}`}>Back to the group</Link>
+                <p className="card-footer">
+                    <Link to={`/groups/${id}`}>Back to the group</Link>
+                </p>
             </div>
         </div>
     );

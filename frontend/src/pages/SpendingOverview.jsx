@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useLoaderData } from 'react-router-dom';
+import { Link, useLoaderData } from 'react-router-dom';
 import { getSpendingSummary } from '../api/spending';
 import { money } from '../utils/formatExpenseAmount';
 import { currentMonth, formatMonth, formatShortMonth } from '../utils/months';
@@ -157,6 +157,11 @@ function SpendingOverview() {
                         )}
                     </>
                 )}
+
+                {/* #83: with no home page, link back to the groups overview this page is reached from */}
+                <p className="card-footer">
+                    <Link to="/groups">Back to your groups</Link>
+                </p>
             </div>
         </div>
     );

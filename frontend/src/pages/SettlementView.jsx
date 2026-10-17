@@ -66,13 +66,13 @@ export default function SettlementView({ groupId, baseCurrency, refreshVersion =
 
     return (
         <div>
-            <button onClick={() => void loadBalances()} disabled={paying !== null}>Generate settlement plan</button>
+            <button className="button-small" onClick={() => void loadBalances()}>Generate settlement plan</button>
             {settlement && (
                 <div>
                     {settlement.length === 0 ? (
                         <p className="empty">Everyone is settled up.</p>
                     ) : (
-                        <ul>
+                        <ul className="settlement-list">
                             {settlement.map((s) => {
                                 const fromUsername = memberLookup.get(s.fromUserId) || `User ${s.fromUserId}`;
                                 const toUsername = memberLookup.get(s.toUserId) || `User ${s.toUserId}`;
@@ -89,8 +89,8 @@ export default function SettlementView({ groupId, baseCurrency, refreshVersion =
                                             <button
                                                 type="button"
                                                 onClick={() => void onMarkPaid(s.fromUserId, s.toUserId)}
+                                                className="button-small"
                                                 disabled={paying === settlementKey}
-                                                style={{ marginLeft: '0.75rem' }}
                                             >
                                                 {paying === settlementKey ? 'Marking paid…' : 'Mark as paid'}
                                             </button>
