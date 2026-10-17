@@ -240,8 +240,6 @@ function GroupPage() {
                         <ul className="expense-list">
                             {expenses.map((expense) => (
                                 <li key={expense.id}>
-                                    <Link className="expense-edit"
-                                          to={`/groups/${id}/expenses/${expense.id}/edit`}>Edit</Link>
                                     {currentUserId != null && expense.createdByUserId === currentUserId && (
                                         <div className="expense-actions">
                                             <Link className="action"
@@ -275,17 +273,16 @@ function GroupPage() {
                         <h2>Recurring expenses</h2>
                         <Link className="button button-small" to={`/groups/${id}/recurring-expenses/new`}>Add recurring expense</Link>
                     </div>
-                <ExpenseActivity groupId={group.id} refreshVersion={expenseVersion} />
-
-                <section>
-                    <h2>Recurring expenses</h2>
-                    <Link className="action" to={`/groups/${id}/recurring-expenses/new`}>Add recurring expense</Link>
 
                     <RecurringExpenseList recurringExpenses={recurringExpenses}
                                           error={recurringExpensesError}
                                           currency={group.baseCurrency}/>
                 </section>
 
+                {/* #11: expense activity is a panel of its own below the recurring expenses */}
+                <div className="panel group-activity">
+                    <ExpenseActivity groupId={group.id} refreshVersion={expenseVersion} />
+                </div>
                 </div>
 
                 <div className="group-column">

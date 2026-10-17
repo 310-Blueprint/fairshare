@@ -76,8 +76,10 @@
     flex-shrink: 0;
 }
 
-/* The settlement plan's list sits inside SettlementView, so the panel itself scrolls. */
-.group-settlement {
+/* The settlement plan's list sits inside SettlementView, and the activity list inside
+   ExpenseActivity, so these panels scroll themselves. */
+.group-settlement,
+.group-activity {
     overflow-y: auto;
 }
 
@@ -100,14 +102,43 @@
     }
 }
 
-.expense-list li:has(.expense-edit) {
+/* #11: Edit and Delete sit after the amount, only on expenses the current user created. */
+.expense-list li:has(.expense-actions) {
     grid-template-columns: minmax(0, 1fr) auto auto;
 }
 
-.card .expense-edit {
+.expense-actions {
+    display: flex;
     grid-row: 1 / span 2;
     grid-column: 3;
+    align-items: center;
+    gap: var(--space-3);
     font-size: 14px;
+}
+
+.expense-actions .action {
+    margin: 0;
+}
+
+/* A button that reads as a link, matching the Edit link beside it. */
+.card .expense-delete-link {
+    width: auto;
+    padding: 0;
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+    background: none;
+    color: var(--success);
+    font: inherit;
+    font-weight: 500;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+}
+
+.card .expense-delete-link:disabled {
+    color: var(--text-muted);
+    cursor: default;
 }
 
 .section-link {
@@ -147,36 +178,6 @@
     margin-bottom: 0;
 }
 
-.expense-actions {
-    display: flex;
-    gap: 12px;
-    align-items: baseline;
-    grid-column: 1;
-    margin-bottom: 10px;
-}
-
-.expense-actions .action {
-    margin: 0;
-}
-
-.expense-delete-link {
-    width: auto;
-    padding: 0;
-    margin: 0;
-    border: 0;
-    border-radius: 0;
-    background: none;
-    color: #0000ee;
-    font: inherit;
-    text-decoration: underline;
-    cursor: pointer;
-}
-
-.expense-delete-link:disabled {
-    color: #666;
-    cursor: default;
-}
-
 .expense-activity-list {
     list-style: none;
     margin: 0;
@@ -185,7 +186,7 @@
 
 .expense-activity-list li {
     padding: 10px 0;
-    border-bottom: 1px solid #f0f0f0;
+    border-bottom: 1px solid var(--border);
     overflow-wrap: anywhere;
 }
 
@@ -193,5 +194,5 @@
     display: block;
     margin-top: 4px;
     font-size: 13px;
-    color: #666;
+    color: var(--text-muted);
 }
