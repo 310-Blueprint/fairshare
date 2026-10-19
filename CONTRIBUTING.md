@@ -42,7 +42,7 @@ Where a decision was reached in a group meeting, the comment states that it reco
 
 The goal is a web application where a group records shared expenses and receives a settlement plan containing the fewest possible transfers.
 
-Planned for the first release:
+Completed in the first release:
 
 - User profiles ([#1](https://github.com/se310-fairshare/fairshare/issues/1))
 - Group creation and management ([#3](https://github.com/se310-fairshare/fairshare/issues/3), [#4](https://github.com/se310-fairshare/fairshare/issues/4))
@@ -52,14 +52,23 @@ Planned for the first release:
 - Saving and exporting group data ([#12](https://github.com/se310-fairshare/fairshare/issues/12))
 - MySQL persistence, SonarCloud analysis and Snyk scanning ([#22](https://github.com/se310-fairshare/fairshare/issues/22), [#20](https://github.com/se310-fairshare/fairshare/issues/20), [#21](https://github.com/se310-fairshare/fairshare/issues/21))
 
-Deferred to the second release:
+Completed in the second release:
 
 - Individual debt tracking ([#2](https://github.com/se310-fairshare/fairshare/issues/2))
 - Receipt scanning ([#5](https://github.com/se310-fairshare/fairshare/issues/5))
 - Recurring expenses ([#13](https://github.com/se310-fairshare/fairshare/issues/13))
 - Multi-currency support ([#14](https://github.com/se310-fairshare/fairshare/issues/14))
-- Payment reminders ([#15](https://github.com/se310-fairshare/fairshare/issues/15))
 - Charts and monthly summaries ([#16](https://github.com/se310-fairshare/fairshare/issues/16))
+
+Still open:
+
+- Payment reminders ([#15](https://github.com/se310-fairshare/fairshare/issues/15))
+- Viewing monthly individual spending across multiple currencies ([#68](https://github.com/se310-fairshare/fairshare/issues/68))
+- Filtering the individual spending view ([#69](https://github.com/se310-fairshare/fairshare/issues/69))
+- Viewing expenses in your own currency ([#70](https://github.com/se310-fairshare/fairshare/issues/70))
+- Editing recurring expenses ([#71](https://github.com/se310-fairshare/fairshare/issues/71))
+- Converting a scanned receipt into an expense ([#72](https://github.com/se310-fairshare/fairshare/issues/72))
+- Selecting any country in the user profile ([#74](https://github.com/se310-fairshare/fairshare/issues/74))
 
 ## Architecture overview
 
@@ -74,9 +83,10 @@ frontend/   React 19 single-page application, built with Vite 8
 The frontend is a single-page application that calls the backend over HTTP and holds no business logic of its own.
 The backend owns expense calculation and settlement, exposed as a REST API under the `nz.ac.auckland.se310.fairshare` package.
 Persistence uses MySQL through Spring Data JPA and Hibernate, tracked under issue [#22](https://github.com/se310-fairshare/fairshare/issues/22).
-Datasource credentials are supplied only through environment variables and are never committed.
+Datasource credentials are supplied through environment variables or an uncommitted `backend/.env` file, and are never committed.
 Hibernate runs with `ddl-auto=validate`, so it checks entity mappings against the existing schema and never creates or alters tables; schema changes come from version-controlled migrations, tracked under issue [#37](https://github.com/se310-fairshare/fairshare/issues/37).
-The full schema is created by a single baseline migration, `backend/src/main/resources/db/migration/V1__initial_schema.sql`. New schema changes go in a new migration (`V2__...`, `V3__...`) rather than edits to an applied one, because Flyway rejects migrations whose checksum has changed.
+The schema starts from the baseline migration `backend/src/main/resources/db/migration/V1__initial_schema.sql`, followed by numbered migrations for each later change.
+New schema changes go in a new migration with the next free version number rather than edits to an applied one, because Flyway rejects migrations whose checksum has changed.
 Backend testing uses JUnit and Mockito, with Testcontainers for database integration tests.
 Frontend testing uses Vitest with React Testing Library, with test files under `frontend/test/`.
 
@@ -102,8 +112,10 @@ Maven does not need to be installed, as the repository includes the Maven wrappe
 Clone a fork of the repository, then start either application.
 
 The backend requires a running MySQL database and will not start without one.
-Create the database and set `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME` and `SPRING_DATASOURCE_PASSWORD` as described on the [MySQL persistence setup](https://github.com/se310-fairshare/fairshare/wiki/MySQL-Persistence-Setup) wiki page.
-Credentials belong in the environment, never in `application.properties` or any committed file.
+Create the database by following the setup page for your platform, [macOS](https://github.com/se310-fairshare/fairshare/wiki/macOS-Setup-MySQL-and-Docker) or [Windows](https://github.com/se310-fairshare/fairshare/wiki/Windows-Setup-MySQL-and-Docker).
+Then supply the database URL, username and password, either as the environment variables `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME` and `SPRING_DATASOURCE_PASSWORD`, or as `spring.datasource.*` properties in a `backend/.env` file, as described in the [README](README.md#2-configure-the-backend).
+Credentials belong in the environment or in `backend/.env`, which Git ignores, never in `application.properties` or any committed file.
+A Gemini API key (`GEMINI_API_KEY`, or `gemini.api-key` in `backend/.env`) is optional; without it, receipt scanning falls back to local Tesseract OCR.
 
 Backend, served on port 8080:
 
@@ -135,14 +147,18 @@ cd backend
 
 The frontend test suite runs through npm and needs no additional services. Tests use Vitest with React Testing Library and jsdom.
 
-    cd frontend
-    npm ci
-    npm test
+```bash
+cd frontend
+npm ci
+npm test
+```
 
 A production build is verified separately:
 
-    cd frontend
-    npm run build
+```bash
+cd frontend
+npm run build
+```
 
 Both commands are run by the CI workflow on every push to main and on every pull request targeting main.
 
